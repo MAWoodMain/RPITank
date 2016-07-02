@@ -6,8 +6,8 @@ package motors;
  */
 public class TankDriveAssembly implements DriveAssembly
 {
-    private Motor left;
-    private Motor right;
+    private final Motor left;
+    private final Motor right;
 
     private float angle;
     private float speed;
@@ -61,8 +61,8 @@ public class TankDriveAssembly implements DriveAssembly
     {
         if(speed == 0)
         {
-            left.stop();
-            right.stop();
+            //left.stop();
+            //right.stop();
         } else
         {
             float leftCoefficient = 1;
