@@ -32,6 +32,7 @@ public class DCMotor implements Motor
         if(speed > 1) speed = 1;
         if(speed < -1) speed = -1;
         this.speed = speed;
+
         if(speed > 0)
         {
             SoftPwm.softPwmWrite(this.pinA.getPin().getAddress(), Math.round(speed * 100));
@@ -42,8 +43,8 @@ public class DCMotor implements Motor
             SoftPwm.softPwmWrite(this.pinB.getPin().getAddress(), Math.round(Math.abs(speed) * 100));
         } else
         {
-            SoftPwm.softPwmStop(this.pinA.getPin().getAddress());
-            SoftPwm.softPwmStop(this.pinB.getPin().getAddress());
+            SoftPwm.softPwmWrite(this.pinA.getPin().getAddress(), 0);
+            SoftPwm.softPwmWrite(this.pinB.getPin().getAddress(), 0);
         }
     }
 
