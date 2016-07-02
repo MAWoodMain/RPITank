@@ -17,24 +17,18 @@ public class Main
 
         final GpioController gpio = GpioFactory.getInstance();
 
-        final GpioPinDigitalOutput motor1A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_00, "Motor1A", PinState.LOW);
-        motor1A.setShutdownOptions(true, PinState.LOW);
-        final GpioPinDigitalOutput motor1B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "Motor1B", PinState.LOW);
-        motor1B.setShutdownOptions(true, PinState.LOW);
-
-        final GpioPinDigitalOutput motor2A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02, "Motor2A", PinState.LOW);
-        motor2A.setShutdownOptions(true, PinState.LOW);
-        final GpioPinDigitalOutput motor2B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03, "Motor2B", PinState.LOW);
-        motor2B.setShutdownOptions(true, PinState.LOW);
-
-        final Motor left = new DCMotor(motor1A, motor1B);
-        final Motor right = new DCMotor(motor2A, motor2B);
+        final Motor left = new DCMotor(
+                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_00, "LeftMotorA", PinState.LOW),
+                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "LeftMotorB", PinState.LOW));
+        final Motor right = new DCMotor(
+                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02, "RightMotorA", PinState.LOW),
+                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03, "RightMotorB", PinState.LOW));
 
         DriveAssembly driveAssembly = new TankDriveAssembly(left,right);
 
         driveAssembly.setDirection(-90f);
 
-        for(int i=0; i<101; i++)
+        for(int i=0; i<=100; i++)
         {
             driveAssembly.setSpeed(((float)i)/100);
             Thread.sleep(200);

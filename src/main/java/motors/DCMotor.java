@@ -1,6 +1,7 @@
 package motors;
 
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.PinState;
 import com.pi4j.wiringpi.SoftPwm;
 
 /**
@@ -19,6 +20,8 @@ public class DCMotor implements Motor
     {
         this.pinA = pinA;
         this.pinB = pinB;
+        this.pinA.setShutdownOptions(true, PinState.LOW);
+        this.pinB.setShutdownOptions(true, PinState.LOW);
         SoftPwm.softPwmCreate(this.pinA.getPin().getAddress(), 0, 100);
         SoftPwm.softPwmCreate(this.pinB.getPin().getAddress(), 0, 100);
     }
