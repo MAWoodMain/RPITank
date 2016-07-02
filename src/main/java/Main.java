@@ -20,22 +20,14 @@ public class Main
 
         final GpioController gpio = GpioFactory.getInstance();
 
-        final GpioPinDigitalOutput motor1A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "Motor1A", PinState.LOW);
-        final GpioPinDigitalOutput motor1B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02, "Motor1B", PinState.LOW);
+        final GpioPinDigitalOutput motor1A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_00, "Motor1A", PinState.LOW);
+        final GpioPinDigitalOutput motor1B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "Motor1B", PinState.LOW);
 
-        final GpioPinDigitalOutput motor2A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03, "Motor2A", PinState.LOW);
-        final GpioPinDigitalOutput motor2B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "Motor2B", PinState.LOW);
+        final GpioPinDigitalOutput motor2A = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02, "Motor2A", PinState.LOW);
+        final GpioPinDigitalOutput motor2B = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03, "Motor2B", PinState.LOW);
 
-        Motor left = new DCMotor(motor1A,motor1B);
-        Motor right = new DCMotor(motor2A,motor2B);
-
-        DriveAssembly mainDriveAssembly = new TankDriveAssembly(left,right);
-        mainDriveAssembly.setDirection(90f);
-        mainDriveAssembly.setSpeed(.5f);
-    }
-
-    public static int getBit(byte b, int position)
-    {
-        return (b >> 3-position) & 1;
+        StepperMotor s1 = new StepperMotor(new GpioPinDigitalOutput[]{motor1A, motor1B, motor2A, motor2B}, 2048);
+        s1.rotate(360);
+        s1.rotate(-360);
     }
 }
