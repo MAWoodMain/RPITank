@@ -26,7 +26,7 @@ public class Main
 
         DriveAssembly driveAssembly = new TankDriveAssembly(left,right);
 
-        driveAssembly.setDirection(-90f);
+        driveAssembly.setDirection(0f);
 
         for(int i=0; i<=100; i++)
         {
