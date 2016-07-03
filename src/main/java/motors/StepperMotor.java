@@ -19,6 +19,7 @@ public class StepperMotor
     private PinState[] states;
     private GpioPinDigitalOutput[] pins;
     private final int STEPS_PER_ROTATION;
+    private final int STEP_DELAY_NANOS = 700000;
     private int phase;
 
     public StepperMotor(GpioPinDigitalOutput[] pins, int steps_per_rotation)
@@ -49,8 +50,7 @@ public class StepperMotor
             System.out.println(phase);
             pins[i].setState(states[(stepSequence[phase] >> 3-i) & 1]);
             long start = System.nanoTime();
-            int delay = 700000;
-            while(System.nanoTime() - start < delay);
+            while(System.nanoTime() - start < STEP_DELAY_NANOS);
         }
 
     }
@@ -64,11 +64,6 @@ public class StepperMotor
         {
             step(dir);
             steps--;
-
-            /* top kek
-            bant
-            yo nan is on pillz
-             */
         }
     }
 }
