@@ -93,9 +93,7 @@ public class TankDriveAssembly implements DriveAssembly
             }
 
             left.setSpeed(leftCoefficient * this.getSpeed());
-            System.out.println("Left : " + leftCoefficient * this.getSpeed());
             right.setSpeed(rightCoefficient * this.getSpeed());
-            System.out.println("Right: " + rightCoefficient * this.getSpeed());
         }
     }
 }

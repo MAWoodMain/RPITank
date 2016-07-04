@@ -1,9 +1,6 @@
+import com.pi4j.io.serial.*;
 
-
-import com.pi4j.io.gpio.*;
-import driveAssembly.DriveAssembly;
-import driveAssembly.TankDriveAssembly;
-import motors.*;
+import java.io.IOException;
 
 /**
  * RPITank
@@ -11,46 +8,38 @@ import motors.*;
  */
 public class Main
 {
-    public static void main(String[] args) throws InterruptedException
+    public static void main(String[] args) throws InterruptedException, IOException
     {
-        System.out.println("Starting");
+        final Serial serial = SerialFactory.createInstance();
 
-        final GpioController gpio = GpioFactory.getInstance();
+        // create and register the serial data listener
+        serial.addListener(new SerialDataEventListener() {
+            @Override
+            public void dataReceived(SerialDataEvent event) {
+                // print out the data received to the console
+                try
+                {
+                    System.out.print(event.getAsciiString());
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-        final Motor left = new DCMotor(
-                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_00, "LeftMotorA", PinState.LOW),
-                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "LeftMotorB", PinState.LOW));
-        final Motor right = new DCMotor(
-                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_02, "RightMotorA", PinState.LOW),
-                gpio.provisionDigitalOutputPin(RaspiPin.GPIO_03, "RightMotorB", PinState.LOW));
+        try {
+            // open the default serial port provided on the GPIO header
+            serial.open("/dev/ttyprintk", 9600);
 
-        DriveAssembly driveAssembly = new TankDriveAssembly(left,right);
+            // continuous loop to keep the program running until the user terminates the program
+            while(true) {
+                Thread.sleep(1000);
+            }
 
-        driveAssembly.setDirection(0f);
-        driveAssembly.setSpeed(0f);
-
-        for(int i=10; i<=100; i++)
-        {
-            driveAssembly.setSpeed(((float)i)/100);
-            Thread.sleep(200);
         }
-        for(int i=100; i>=10; i--)
-        {
-            driveAssembly.setSpeed(((float)i)/100);
-            Thread.sleep(200);
-        }
-
-        driveAssembly.setDirection(180f);
-
-        for(int i=10; i<=100; i++)
-        {
-            driveAssembly.setSpeed(((float)i)/100);
-            Thread.sleep(200);
-        }
-        for(int i=100; i>=10; i--)
-        {
-            driveAssembly.setSpeed(((float)i)/100);
-            Thread.sleep(200);
+        catch(SerialPortException ex) {
+            System.out.println(" ==>> SERIAL SETUP FAILED : " + ex.getMessage());
+            return;
         }
     }
 }
