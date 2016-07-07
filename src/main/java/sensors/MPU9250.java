@@ -29,6 +29,8 @@ public class MPU9250
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         mpu9250 = bus.getDevice(address);
 
+       mpu9250.read(0);
+
         // configure device
         mpu9250.write(27,(byte)0x18); // set gyroscope to full scale
         mpu9250.write(28,(byte)0x18); // set accelerometer to full scale
@@ -82,6 +84,9 @@ public class MPU9250
             magX = buffer[3]<<8 &0xFF00 | buffer[2]&0xFF; // constructs 16 bit integer from two bytes
             magY = buffer[1]<<8 &0xFF00 | buffer[0]&0xFF;
             magZ = buffer[5]<<8 &0xFF00 | buffer[4]&0xFF;
+            //magX = getInt(buffer,2);
+            //magY = getInt(buffer,0);
+            //magZ = getInt(buffer,4);
             this.mag = new Point3D(magX,magY,magZ);
         } catch (IOException e)
         {
@@ -91,7 +96,15 @@ public class MPU9250
 
     private void updateTemp()
     {
-
+        try
+        {
+            byte[] buffer = new byte[2];
+            mpu9250.read(65,buffer,0,2);
+            temp = (float)getInt(buffer,0)/100;
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     private int getInt(byte[] arr, int offset)
