@@ -3,6 +3,7 @@ package sensors;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import javafx.geometry.Point3D;
 
 import java.io.IOException;
 
@@ -12,17 +13,11 @@ import java.io.IOException;
  */
 public class MPU9250
 {
-    private double accelX;
-    private double accelY;
-    private double accelZ;
+    private Point3D accel;
 
-    private double gyroX;
-    private double gyroY;
-    private double gyroZ;
+    private Point3D gyro;
 
-    private double magX;
-    private double magY;
-    private double magZ;
+    private Point3D mag;
 
     private final I2CDevice mpu9250;
 
@@ -36,48 +31,36 @@ public class MPU9250
 
     }
 
-    public double getAccelX()
+    private void updateAccel()
     {
-        return accelX;
+
     }
 
-    public double getAccelY()
+    private void updateGyro()
     {
-        return accelY;
+
     }
 
-    public double getAccelZ()
+    private void updateMag()
     {
-        return accelZ;
+
     }
 
-    public double getGyroX()
+    public Point3D getAccelX()
     {
-        return gyroX;
+        updateAccel();
+        return accel;
     }
 
-    public double getGyroY()
+    public Point3D getGyroX()
     {
-        return gyroY;
+        updateGyro();
+        return gyro;
     }
 
-    public double getGyroZ()
+    public Point3D getMagX()
     {
-        return gyroZ;
-    }
-
-    public double getMagX()
-    {
-        return magX;
-    }
-
-    public double getMagY()
-    {
-        return magY;
-    }
-
-    public double getMagZ()
-    {
-        return magZ;
+        updateMag();
+        return mag;
     }
 }
