@@ -6,16 +6,14 @@ package sensors; /**
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
+import javafx.geometry.Point3D;
 
 import java.io.IOException;
-
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 
 /*
  * 3 Axis compass
  */
-public class HMC5883L
+public class HMC5883L implements Magnetometer
 {
     private final static int HMC5883L_ADDRESS                       = 0x1E;
 
@@ -28,8 +26,6 @@ public class HMC5883L
     private final static int HMC5883L_Z_ADR                         = 0x05;
 
     private final static float SCALE = 0.92f;
-
-    private static boolean verbose = "true".equals(System.getProperty("hmc5883l.verbose", "false"));
 
     private I2CBus bus;
     private I2CDevice hcm5883l;
@@ -45,13 +41,8 @@ public class HMC5883L
         {
             // Get i2c bus
             bus = I2CFactory.getInstance(I2CBus.BUS_1); // Depends onthe RasPI version
-            if (verbose)
-                System.out.println("Connected to bus. OK.");
-
             // Get device itself
             hcm5883l = bus.getDevice(address);
-            if (verbose)
-                System.out.println("Connected to device. OK.");
         }
         catch (IOException e)
         {
@@ -72,41 +63,48 @@ public class HMC5883L
         if (w >= 0x8000)
             w = (short) -((0xFFFF - w) + 1);
 
-        if (verbose)
-            System.out.println("ReadWord: 0x" + Integer.toHexString(w).toUpperCase() + ", dec:" + w);
-
         return w;
     }
 
-    /**
-     *
-     * @return Heading in Radians
-     * @throws IOException
-     */
-    public double readHeading() throws IOException
+    public float getHeading()
     {
         double heading = 0f;
 
         byte[] w = new byte[] { (byte)HMC5883L_8_SAMPLES_15HZ,
                 (byte)HMC5883L_13_GAIN_LSB_GAUSS_1090,
                 (byte)HMC5883L_CONTINUOUS_SAMPLING };
-        hcm5883l.write(w, 0, 3); // BeginTrans, write 3 bytes, EndTrans.
-
-        double xOut = readWord_2C(HMC5883L_X_ADR) * SCALE;
-        double yOut = readWord_2C(HMC5883L_Y_ADR) * SCALE;
-        double zOut = readWord_2C(HMC5883L_Z_ADR) * SCALE;
-
-        if (verbose)
+        try
         {
-            System.out.println("xOut:" + xOut);
-            System.out.println("yOut:" + yOut);
-            System.out.println("zOut:" + zOut);
-        }
+            hcm5883l.write(w, 0, 3); // BeginTrans, write 3 bytes, EndTrans.
 
-        heading = Math.atan2(yOut, xOut);
-        if (heading < 0)
-            heading += (2 * Math.PI);
-        return Math.toDegrees(heading);
+            double xOut = readWord_2C(HMC5883L_X_ADR) * SCALE;
+            double yOut = readWord_2C(HMC5883L_Y_ADR) * SCALE;
+            double zOut = readWord_2C(HMC5883L_Z_ADR) * SCALE;
+
+            heading = Math.atan2(yOut, xOut);
+            if (heading < 0)
+                heading += (2 * Math.PI);
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return (float) Math.toDegrees(heading);
+    }
+
+    @Override
+    public Point3D getMagnetrometricData()
+    {
+        try
+        {
+            return new Point3D(
+                    readWord_2C(HMC5883L_X_ADR) * SCALE,
+                    readWord_2C(HMC5883L_Y_ADR) * SCALE,
+                    readWord_2C(HMC5883L_Z_ADR) * SCALE);
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+            return new Point3D(0,0,0);
+        }
     }
 
     public void close()

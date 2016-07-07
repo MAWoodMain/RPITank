@@ -34,21 +34,16 @@ public class MPU9250
         // configure device
         mpu9250.write(27,(byte)0x18); // set gyroscope to full scale
         mpu9250.write(28,(byte)0x18); // set accelerometer to full scale
-        mpu9250.write(55,(byte)0x02); // set pass mode for magnetometer
-        mpu9250.write(10,(byte)0x01); // request first magnetometer measurement
+        mpu9250.write(55,(byte)0x00); // set pass mode for magnetometer
+        mpu9250.write(10,(byte)0x06); // set magnetometer mode 2:continuous 1 6: continuous 2 1: single
+        //mpu9250.write(11,(byte)0x00); // disable reset
     }
 
     private void updateAccel()
     {
         try
         {
-            byte[] buffer = new byte[6];
-            mpu9250.read(59,buffer,0,6); // read gyro and acc data
-            int accX,accY,accZ;
-            accX = getInt(buffer,0);
-            accY = getInt(buffer,2);
-            accZ = getInt(buffer,4);
-            this.accel = new Point3D(accX,accY,accZ);
+            this.accel = new Point3D(getData(59),getData(61),getData(63));
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -60,13 +55,7 @@ public class MPU9250
     {
         try
         {
-            byte[] buffer = new byte[6];
-            mpu9250.read(67,buffer,0,6); // read gyro and acc data
-            int gyroX,gyroY,gyroZ;
-            gyroX = getInt(buffer,0);
-            gyroY = getInt(buffer,2);
-            gyroZ = getInt(buffer,4);
-            this.gyro = new Point3D(gyroX,gyroY,gyroZ);
+            this.gyro = new Point3D(getData(67),getData(69),getData(71));
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -77,17 +66,13 @@ public class MPU9250
     {
         try
         {
-            byte[] buffer = new byte[7];
-            mpu9250.read(3,buffer,0,7);
-
-            int magX,magY,magZ;
-            magX = buffer[3]<<8 &0xFF00 | buffer[2]&0xFF; // constructs 16 bit integer from two bytes
-            magY = buffer[1]<<8 &0xFF00 | buffer[0]&0xFF;
-            magZ = buffer[5]<<8 &0xFF00 | buffer[4]&0xFF;
-            //magX = getInt(buffer,2);
-            //magY = getInt(buffer,0);
-            //magZ = getInt(buffer,4);
-            this.mag = new Point3D(magX,magY,magZ);
+            /*for(int i = 73; i<=96; i++)
+            {
+                System.out.println(i + " : " + Integer.toBinaryString(mpu9250.read(i)));
+            }
+            System.out.println("55 : " + Integer.toBinaryString(mpu9250.read(55)));*/
+            this.mag = new Point3D(getData(5),getData(3),getData(7));
+            mpu9250.read(9);
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -98,18 +83,18 @@ public class MPU9250
     {
         try
         {
-            byte[] buffer = new byte[2];
-            mpu9250.read(65,buffer,0,2);
-            temp = (float)getInt(buffer,0)/100;
+            temp = getData(65);
         } catch (IOException e)
         {
             e.printStackTrace();
         }
     }
 
-    private int getInt(byte[] arr, int offset)
+    private float getData(int address) throws IOException
     {
-        return arr[offset]<<8 &0xFF00 | arr[offset+1]&0xFF; // construct 16 bit integer from two bytes
+        byte high = (byte)mpu9250.read(address);
+        byte low = (byte)mpu9250.read(address);
+        return ((float)(high<<8 &0xFF00 | low&0xFF))/100; // construct 16 bit integer from two bytes
     }
 
     public Point3D getAccel()

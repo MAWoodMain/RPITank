@@ -16,14 +16,17 @@ public class Main
     public static void main(String[] args) throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException
     {
         MPU9250 mpu9250 = new MPU9250(104);
+        int i = 0;
+           // System.out.println("Gyro: " + mpu9250.getGyro());
 
-        while(true)
-        {
-           /* System.out.println("Gyro: " + mpu9250.getGyro());
-            System.out.println("Acce: " + mpu9250.getAccel());
-            System.out.println("magn: " + mpu9250.getMag());*/
-            System.out.println("temp: " + mpu9250.getTemp());
-            Thread.sleep(500);
-        }
+            i++;
+            Point3D gyro = mpu9250.getGyro();
+            Point3D mag = mpu9250.getMag();
+            Point3D accel = mpu9250.getAccel();
+            /*System.out.println(i + ", " + gyro.getX() + ", " + gyro.getY() + ", " + gyro.getZ() + ", " +
+            mag.getX() + ", " + mag.getY() + ", " + mag.getZ() + ", " +
+            accel.getX() + ", " + accel.getY() + ", " + accel.getZ());*/
+            System.out.println(mag);
+            Thread.sleep(100);
     }
 }
