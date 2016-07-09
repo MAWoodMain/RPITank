@@ -9,4 +9,6 @@ import javafx.geometry.Point3D;
 public interface Accelerometer
 {
     Point3D getAcceleration();
+    float getMaxAcceleration();
+    float getMinAcceleration();
 }

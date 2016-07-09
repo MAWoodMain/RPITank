@@ -9,4 +9,6 @@ import javafx.geometry.Point3D;
 public interface Gyroscope
 {
     Point3D getRotationalAcceleration();
+    float getMaxRotationalAcceleration();
+    float getMinRotationalAcceleration();
 }

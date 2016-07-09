@@ -92,7 +92,19 @@ public class HMC5883L implements Magnetometer
     }
 
     @Override
-    public Point3D getMagnetrometricData()
+    public float getMaxGauss()
+    {
+        return 0;
+    }
+
+    @Override
+    public float getMinGauss()
+    {
+        return 0;
+    }
+
+    @Override
+    public Point3D getGaussianData()
     {
         try
         {
