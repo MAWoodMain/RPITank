@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import com.sun.deploy.util.ArrayUtil;
+import com.sun.deploy.util.SystemUtils;
 import javafx.geometry.Point3D;
 
 import java.io.IOException;
@@ -42,17 +43,12 @@ public class MPU9250
     private float temp;
 
     private final I2CDevice mpu9250;
-    private static final int SENSOR_MAX = 32760;
-    private static final int SENSOR_MIN = -32760;
 
-    private static final int ACCEL_MIN = -4;
-    private static final int ACCEL_MAX = 4;
+    private static final double ACCEL_SCALE = 4.0/32768.0;
 
-    private static final int GYRO_MIN = -2000;
-    private static final int GYRO_MAX = 2000;
+    private static final double GYRO_SCALE = 2000.0/32768.0;
 
-    private static final int MAG_MIN = -4800;
-    private static final int MAG_MAX = 4800;
+    private static final double MAG_SCALE = 10.0*4912.0/32760.0;
 
     public MPU9250(int address) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
@@ -62,15 +58,23 @@ public class MPU9250
 
         ArrayList<I2CWriteOperation> operations = new ArrayList<>();
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x80)); // reset device
+        //operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x80)); // reset device
+        operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x01)); // reset device
+
         operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x01)); // clock source
         operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_2.getValue(),0x00)); // enable acc and gyro
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x01)); // use DLPF set gyroscope bandwidth 184Hz
-        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18)); // +-2000dps
+        //operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x01)); // use DLPF set gyroscope bandwidth 184Hz
+        operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x03));
+        operations.add(new I2CWriteOperation(MPU9250Registers.SMPLRT_DIV.getValue(), 0x04));
+
+        //operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18)); // +-2000dps
+        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18));
+
         operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),0x08)); // +-4G
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
+        //operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
+        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x15)); // set acc data rates, enable acc LPF, bandwidth 184Hz
         operations.add(new I2CWriteOperation(MPU9250Registers.INT_PIN_CFG.getValue(),0x30));
 
         operations.add(new I2CWriteOperation(MPU9250Registers.USER_CTRL.getValue(),0x20)); // I2C master mode
@@ -106,13 +110,10 @@ public class MPU9250
                     getData(MPU9250Registers.ACCEL_YOUT_H.getValue()),
                     getData(MPU9250Registers.ACCEL_ZOUT_H.getValue()));
             this.accel = new Point3D(
-                    map(raw.getX(), SENSOR_MIN, SENSOR_MAX, ACCEL_MIN,ACCEL_MAX),
-                    map(raw.getY(), SENSOR_MIN, SENSOR_MAX, ACCEL_MIN,ACCEL_MAX),
-                    map(raw.getZ(), SENSOR_MIN, SENSOR_MAX, ACCEL_MIN,ACCEL_MAX));
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        } catch (InterruptedException e)
+                    raw.getX()*ACCEL_SCALE,
+                    raw.getY()*ACCEL_SCALE,
+                    raw.getZ()*ACCEL_SCALE);
+        } catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -129,13 +130,10 @@ public class MPU9250
                     getData(MPU9250Registers.GYRO_YOUT_H.getValue()),
                     getData(MPU9250Registers.GYRO_ZOUT_H.getValue()));
             this.gyro = new Point3D(
-                    map(raw.getX(), SENSOR_MIN, SENSOR_MAX, GYRO_MIN,GYRO_MAX),
-                    map(raw.getY(), SENSOR_MIN, SENSOR_MAX, GYRO_MIN,GYRO_MAX),
-                    map(raw.getZ(), SENSOR_MIN, SENSOR_MAX, GYRO_MIN,GYRO_MAX));
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        } catch (InterruptedException e)
+                    raw.getX()*GYRO_SCALE,
+                    raw.getY()*GYRO_SCALE,
+                    raw.getZ()*GYRO_SCALE);
+        } catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -155,17 +153,14 @@ public class MPU9250
             byte[] data = new byte[7];
             mpu9250.read(MPU9250Registers.EXT_SENS_DATA_00.getValue(),data,0,7);
             Point3D raw = new Point3D(
-                    (double)(data[0]<<8 | data[1]),
-                    (double)(data[2]<<8 | data[3]),
-                    (double)(data[4]<<8 | data[5]));
+                    (double)(data[1]<<8 | data[0]),
+                    (double)(data[3]<<8 | data[2]),
+                    (double)(data[5]<<8 | data[4]));
             this.mag = new Point3D(
-                    map(raw.getX(), SENSOR_MIN, SENSOR_MAX, MAG_MIN,MAG_MAX),
-                    map(raw.getY(), SENSOR_MIN, SENSOR_MAX, MAG_MIN,MAG_MAX),
-                    map(raw.getZ(), SENSOR_MIN, SENSOR_MAX, MAG_MIN,MAG_MAX));
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        } catch (InterruptedException e)
+                    raw.getX()*MAG_SCALE,
+                    raw.getY()*MAG_SCALE,
+                    raw.getZ()*MAG_SCALE);
+        } catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -177,10 +172,7 @@ public class MPU9250
         {
             while(!isDataReady()) Thread.sleep(1);
             temp = getData(MPU9250Registers.TEMP_OUT_H.getValue());
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        } catch (InterruptedException e)
+        } catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -220,7 +212,7 @@ public class MPU9250
     private boolean isDataReady() throws IOException
     {
         return true;
-        //return (mpu9250.read(MPU9250Registers.INT_STATUS.getValue()) & 1) != 1;//readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01
+        //return (mpu9250.read(MPU9250Registers.INT_STATUS.getValue()) & 0x01) == 0;//readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01
     }
 
     public float getHeading()
@@ -229,10 +221,5 @@ public class MPU9250
         heading = Math.atan2(mag.getY(), mag.getX());
         if (heading < 0) heading += (2 * Math.PI);
         return (float) Math.toDegrees(heading);
-    }
-
-    private double map(double x, double in_min, double in_max, double out_min, double out_max)
-    {
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 }
