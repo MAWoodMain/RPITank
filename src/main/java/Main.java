@@ -2,13 +2,9 @@
 
 import com.pi4j.io.i2c.I2CFactory;
 import javafx.geometry.Point3D;
-import sensors.MPU9250;
+import sensors.MPU9250.MPU9250;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.text.DecimalFormat;
 
 /**
  * RPITank
