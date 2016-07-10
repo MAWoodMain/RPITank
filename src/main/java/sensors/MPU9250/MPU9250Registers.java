@@ -135,11 +135,44 @@ enum MPU9250Registers
     YA_OFFSET_H      (0x7A),
     YA_OFFSET_L      (0x7B),
     ZA_OFFSET_H      (0x7D),
-    ZA_OFFSET_L      (0x7E)
-    ;
+    ZA_OFFSET_L      (0x7E);
 
     private int value;
     MPU9250Registers(int value)
+    {
+        this.value = value;
+    }
+    public int getValue()
+    {
+        return value;
+    }
+}
+
+enum MagScale
+{
+    MFS_14BIT(0x02),
+    MFS_16BIT(0x12);
+
+    private int value;
+    MagScale(int value)
+    {
+        this.value = value;
+    }
+    public int getValue()
+    {
+        return value;
+    }
+}
+
+enum AccScale
+{
+    AFS_2G(0x00),
+    AFS_4G(0x08),
+    AFS_8G(0x10),
+    AFS_16G(0x18);
+
+    private int value;
+    AccScale(int value)
     {
         this.value = value;
     }

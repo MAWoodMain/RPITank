@@ -48,6 +48,8 @@ public class MPU9250
 
     private static final double MAG_SCALE = 10.0*4912.0/32760.0;
 
+    private static final MagScale magScale = MagScale.MFS_16BIT;
+
     public MPU9250(int address) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
         // get device
@@ -85,7 +87,7 @@ public class MPU9250
         operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
 
         operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_REG.getValue(),0x0A)); // I2C slave 0 register address from where to begin
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_DO.getValue(),0x12)); // register value to continuous measurement 16 bit
+        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_DO.getValue(),magScale.getValue())); // register value to continuous measurement 16 bit
         operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
 
         operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18)); // +-2000dps
@@ -195,7 +197,7 @@ public class MPU9250
         return gyro;
     }
 
-    public Data3D<Double> getMag()
+    public Data3D<Double>        getMag()
     {
         updateMag();
         return mag;
