@@ -3,9 +3,7 @@ package sensors.MPU9250;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import com.sun.deploy.util.ArrayUtil;
-import com.sun.deploy.util.SystemUtils;
-import javafx.geometry.Point3D;
+import sensors.Data3D;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,9 +35,9 @@ public class MPU9250
         }
     }
 
-    private Point3D accel;
-    private Point3D gyro;
-    private Point3D mag;
+    private Data3D<Double> accel;
+    private Data3D<Double> gyro;
+    private Data3D<Double> mag;
     private float temp;
 
     private final I2CDevice mpu9250;
@@ -105,11 +103,11 @@ public class MPU9250
         try
         {
             while(!isDataReady()) Thread.sleep(1);
-            Point3D raw = new Point3D(
+            Data3D<Integer> raw = new Data3D<>(
                     getData(MPU9250Registers.ACCEL_XOUT_H.getValue()),
                     getData(MPU9250Registers.ACCEL_YOUT_H.getValue()),
                     getData(MPU9250Registers.ACCEL_ZOUT_H.getValue()));
-            this.accel = new Point3D(
+            this.accel = new Data3D<>(
                     raw.getX()*ACCEL_SCALE,
                     raw.getY()*ACCEL_SCALE,
                     raw.getZ()*ACCEL_SCALE);
@@ -125,11 +123,11 @@ public class MPU9250
         try
         {
             while(!isDataReady()) Thread.sleep(1);
-            Point3D raw = new Point3D(
+            Data3D<Integer> raw = new Data3D<>(
                     getData(MPU9250Registers.GYRO_XOUT_H.getValue()),
                     getData(MPU9250Registers.GYRO_YOUT_H.getValue()),
                     getData(MPU9250Registers.GYRO_ZOUT_H.getValue()));
-            this.gyro = new Point3D(
+            this.gyro = new Data3D<>(
                     raw.getX()*GYRO_SCALE,
                     raw.getY()*GYRO_SCALE,
                     raw.getZ()*GYRO_SCALE);
@@ -152,11 +150,11 @@ public class MPU9250
 
             byte[] data = new byte[7];
             mpu9250.read(MPU9250Registers.EXT_SENS_DATA_00.getValue(),data,0,7);
-            Point3D raw = new Point3D(
-                    (double)(data[1]<<8 | data[0]),
-                    (double)(data[3]<<8 | data[2]),
-                    (double)(data[5]<<8 | data[4]));
-            this.mag = new Point3D(
+            Data3D<Integer> raw = new Data3D<>(
+                    (data[1]<<8 | data[0]),
+                    (data[3]<<8 | data[2]),
+                    (data[5]<<8 | data[4]));
+            this.mag = new Data3D<>(
                     raw.getX()*MAG_SCALE,
                     raw.getY()*MAG_SCALE,
                     raw.getZ()*MAG_SCALE);
@@ -178,26 +176,26 @@ public class MPU9250
         }
     }
 
-    private float getData(int address) throws IOException
+    private int getData(int address) throws IOException
     {
         byte high = (byte)mpu9250.read(address);
         byte low = (byte)mpu9250.read(address + 1);
-        return ((float)(high<<8 | low)); // construct 16 bit integer from two bytes
+        return (high<<8 | low); // construct 16 bit integer from two bytes
     }
 
-    public Point3D getAccel()
+    public Data3D<Double> getAccel()
     {
         updateAccel();
         return accel;
     }
 
-    public Point3D getGyro()
+    public Data3D<Double> getGyro()
     {
         updateGyro();
         return gyro;
     }
 
-    public Point3D getMag()
+    public Data3D<Double> getMag()
     {
         updateMag();
         return mag;
