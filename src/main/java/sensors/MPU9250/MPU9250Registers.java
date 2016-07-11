@@ -168,21 +168,25 @@ enum MagScale
     {
         return res;
     }
+    public int getMinMax()
+    {
+        return 4800;
+    }
 }
 
 enum AccScale
 {
-    AFS_2G(0x00,2.0/32768.0),
-    AFS_4G(0x08,4.0/32768.0),
-    AFS_8G(0x10,8.0/32768.0),
-    AFS_16G(0x18,16.0/32768.0);
+    AFS_2G(0x00,2),
+    AFS_4G(0x08,4),
+    AFS_8G(0x10,8),
+    AFS_16G(0x18,16);
 
     private final int value;
-    private final double res;
-    AccScale(int value, double res)
+    private final int minMax;
+    AccScale(int value, int minMax)
     {
         this.value = value;
-        this.res = res;
+        this.minMax = minMax;
     }
     public int getValue()
     {
@@ -190,23 +194,27 @@ enum AccScale
     }
     public double getRes()
     {
-        return res;
+        return (double)minMax/32768.0;
+    }
+    public int getMinMax()
+    {
+        return minMax;
     }
 }
 
 enum GyrScale
 {
-    GFS_250DPS(0x00,250.0/32768.0),
-    GFS_500DPS(0x08,500.0/32768.0),
-    GFS_1000DPS(0x10,1000.0/32768.0),
-    GFS_2000DPS(0x18,2000.0/32768.0);
+    GFS_250DPS(0x00,250),
+    GFS_500DPS(0x08,500),
+    GFS_1000DPS(0x10,1000),
+    GFS_2000DPS(0x18,2000);
 
     private final int value;
-    private final double res;
-    GyrScale(int value, double res)
+    private final int minMax;
+    GyrScale(int value, int minMax)
     {
         this.value = value;
-        this.res = res;
+        this.minMax = minMax;
     }
     public int getValue()
     {
@@ -214,7 +222,11 @@ enum GyrScale
     }
     public double getRes()
     {
-        return res;
+        return (double)minMax/32768.0;
+    }
+    public int getMinMax()
+    {
+        return minMax;
     }
 }
 

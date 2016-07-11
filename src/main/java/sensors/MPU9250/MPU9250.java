@@ -3,55 +3,35 @@ package sensors.MPU9250;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import sensors.Data3D;
+import javafx.geometry.Point3D;
+import sensors.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * RPITank
  * Created by MAWood on 07/07/2016.
  */
-public class MPU9250
+public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermometer, Runnable
 {
-    private class I2CWriteOperation
-    {
-        private final int address;
-        private final int value;
-        private I2CWriteOperation(int address, int value)
-        {
-            this.address = address;
-            this.value = value;
-        }
-
-        private int getAddress()
-        {
-            return address;
-        }
-
-        private byte getEncodedValue()
-        {
-            return (byte) value;
-        }
-    }
+    private static final MagScale magScale = MagScale.MFS_16BIT;
+    private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
+    private static final AccScale accScale = AccScale.AFS_4G;
 
     private Data3D<Double> accel;
     private Data3D<Double> gyro;
     private Data3D<Double> mag;
     private float temp;
 
+    private boolean paused;
+
     private final I2CDevice mpu9250;
-
-    private static final double ACCEL_SCALE = 4.0/32768.0;
-
-    private static final double GYRO_SCALE = 2000.0/32768.0;
-
-    private static final double MAG_SCALE = 10.0*4912.0/32760.0;
-
-    private static final MagScale magScale = MagScale.MFS_16BIT;
 
     public MPU9250(int address) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
+        paused = true;
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         mpu9250 = bus.getDevice(address);
@@ -68,10 +48,9 @@ public class MPU9250
         operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x03));
         operations.add(new I2CWriteOperation(MPU9250Registers.SMPLRT_DIV.getValue(), 0x04));
 
-        //operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18)); // +-2000dps
-        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18));
+        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),0x08)); // +-4G
+        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
 
         //operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
         operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x15)); // set acc data rates, enable acc LPF, bandwidth 184Hz
@@ -90,92 +69,16 @@ public class MPU9250
         operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_DO.getValue(),magScale.getValue())); // register value to continuous measurement 16 bit
         operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),0x18)); // +-2000dps
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),0x08)); // +-4G
+        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
+        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
 
-        for(I2CWriteOperation operation:operations)
-        {
-            mpu9250.write(operation.getAddress(), operation.getEncodedValue());
-            Thread.sleep(100);
-        }
+        executeOperations(operations);
+        paused = false;
     }
 
-    private void updateAccel()
+    private void updateData()
     {
-        try
-        {
-            while(!isDataReady()) Thread.sleep(1);
-            Data3D<Integer> raw = new Data3D<>(
-                    getData(MPU9250Registers.ACCEL_XOUT_H.getValue()),
-                    getData(MPU9250Registers.ACCEL_YOUT_H.getValue()),
-                    getData(MPU9250Registers.ACCEL_ZOUT_H.getValue()));
-            this.accel = new Data3D<>(
-                    raw.getX()*ACCEL_SCALE,
-                    raw.getY()*ACCEL_SCALE,
-                    raw.getZ()*ACCEL_SCALE);
-        } catch (IOException | InterruptedException e)
-        {
-            e.printStackTrace();
-        }
 
-    }
-
-    private void updateGyro()
-    {
-        try
-        {
-            while(!isDataReady()) Thread.sleep(1);
-            Data3D<Integer> raw = new Data3D<>(
-                    getData(MPU9250Registers.GYRO_XOUT_H.getValue()),
-                    getData(MPU9250Registers.GYRO_YOUT_H.getValue()),
-                    getData(MPU9250Registers.GYRO_ZOUT_H.getValue()));
-            this.gyro = new Data3D<>(
-                    raw.getX()*GYRO_SCALE,
-                    raw.getY()*GYRO_SCALE,
-                    raw.getZ()*GYRO_SCALE);
-        } catch (IOException | InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    private void updateMag()
-    {
-        try
-        {
-            while(!isDataReady()) Thread.sleep(1);
-            mpu9250.write(MPU9250Registers.I2C_SLV0_ADDR.getValue(),(byte)((byte)0x0c|(byte)0x80));
-            mpu9250.write(MPU9250Registers.I2C_SLV0_REG.getValue(), (byte)0x03);
-            mpu9250.write(MPU9250Registers.I2C_SLV0_CTRL.getValue(), (byte)0x87);
-
-            Thread.sleep(10);
-
-            byte[] data = new byte[7];
-            mpu9250.read(MPU9250Registers.EXT_SENS_DATA_00.getValue(),data,0,7);
-            Data3D<Integer> raw = new Data3D<>(
-                    (data[1]<<8 | data[0]),
-                    (data[3]<<8 | data[2]),
-                    (data[5]<<8 | data[4]));
-            this.mag = new Data3D<>(
-                    raw.getX()*MAG_SCALE,
-                    raw.getY()*MAG_SCALE,
-                    raw.getZ()*MAG_SCALE);
-        } catch (IOException | InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    private void updateTemp()
-    {
-        try
-        {
-            while(!isDataReady()) Thread.sleep(1);
-            temp = getData(MPU9250Registers.TEMP_OUT_H.getValue());
-        } catch (IOException | InterruptedException e)
-        {
-            e.printStackTrace();
-        }
     }
 
     private int getData(int address) throws IOException
@@ -185,41 +88,102 @@ public class MPU9250
         return (high<<8 | low); // construct 16 bit integer from two bytes
     }
 
-    public Data3D<Double> getAccel()
+    private void executeOperations(List<I2CWriteOperation> operations) throws IOException
     {
-        updateAccel();
+        for(I2CWriteOperation operation:operations)
+        {
+            mpu9250.write(operation.getAddress(), operation.getEncodedValue());
+            try
+            {
+                Thread.sleep(100);
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void run()
+    {
+        while(!Thread.interrupted())
+        {
+            if(!paused) updateData();
+            try
+            {
+                Thread.sleep(100);
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public Data3D<Double> getAcceleration()
+    {
         return accel;
     }
 
-    public Data3D<Double> getGyro()
+    @Override
+    public Data3D<Double> getRotationalAcceleration()
     {
-        updateGyro();
         return gyro;
     }
 
-    public Data3D<Double>        getMag()
+    @Override
+    public Data3D<Double> getGaussianData()
     {
-        updateMag();
         return mag;
     }
 
-    public float getTemp()
+
+    @Override
+    public float getTemperature()
     {
-        updateTemp();
         return temp;
     }
 
-    private boolean isDataReady() throws IOException
-    {
-        return true;
-        //return (mpu9250.read(MPU9250Registers.INT_STATUS.getValue()) & 0x01) == 0;//readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01
-    }
-
+    @Override
     public float getHeading()
     {
-        double heading = 0f;
-        heading = Math.atan2(mag.getY(), mag.getX());
-        if (heading < 0) heading += (2 * Math.PI);
-        return (float) Math.toDegrees(heading);
+        //TODO: derive heading from Gaussian data
+        return 0;
+    }
+
+    @Override
+    public float getMaxGauss()
+    {
+        return magScale.getMinMax();
+    }
+
+    @Override
+    public float getMinGauss()
+    {
+        return magScale.getMinMax();
+    }
+
+    @Override
+    public float getMaxRotationalAcceleration()
+    {
+        return gyrScale.getMinMax();
+    }
+
+    @Override
+    public float getMinRotationalAcceleration()
+    {
+        return gyrScale.getMinMax();
+    }
+
+    @Override
+    public float getMaxAcceleration()
+    {
+        return accScale.getMinMax();
+    }
+
+    @Override
+    public float getMinAcceleration()
+    {
+        return accScale.getMinMax();
     }
 }
