@@ -47,39 +47,39 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
         ArrayList<I2CWriteOperation> operations = new ArrayList<>();
 
-        //operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x80)); // reset device
-        operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x01)); // reset device
+        //operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x80)); // reset device
+        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x01)); // reset device
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_1.getValue(),0x01)); // clock source
-        operations.add(new I2CWriteOperation(MPU9250Registers.PWR_MGMT_2.getValue(),0x00)); // enable acc and gyro
+        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x01)); // clock source
+        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_2.getValue(),0x00)); // enable acc and gyro
 
-        //operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x01)); // use DLPF set gyroscope bandwidth 184Hz
-        operations.add(new I2CWriteOperation(MPU9250Registers.CONFIG.getValue(),0x03));
-        operations.add(new I2CWriteOperation(MPU9250Registers.SMPLRT_DIV.getValue(), 0x04));
+        //operations.add(new I2CWriteOperation(Registers.CONFIG.getValue(),0x01)); // use DLPF set gyroscope bandwidth 184Hz
+        operations.add(new I2CWriteOperation(Registers.CONFIG.getValue(),0x03));
+        operations.add(new I2CWriteOperation(Registers.SMPLRT_DIV.getValue(), 0x04));
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
+        operations.add(new I2CWriteOperation(Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
+        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
 
-        //operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG2.getValue(),0x15)); // set acc data rates, enable acc LPF, bandwidth 184Hz
-        operations.add(new I2CWriteOperation(MPU9250Registers.INT_PIN_CFG.getValue(),0x30));
+        //operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
+        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG2.getValue(),0x15)); // set acc data rates, enable acc LPF, bandwidth 184Hz
+        operations.add(new I2CWriteOperation(Registers.INT_PIN_CFG.getValue(),0x30));
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.USER_CTRL.getValue(),0x20)); // I2C master mode
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_MST_CTRL.getValue(),0x0D)); // I2C configuration multi-master IIC 400KHz
+        operations.add(new I2CWriteOperation(Registers.USER_CTRL.getValue(),0x20)); // I2C master mode
+        operations.add(new I2CWriteOperation(Registers.I2C_MST_CTRL.getValue(),0x0D)); // I2C configuration multi-master IIC 400KHz
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_ADDR.getValue(),0x0C)); // set the I2C slave address of AK8963
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_ADDR.getValue(),0x0C)); // set the I2C slave address of AK8963
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_REG.getValue(),0x0B)); // I2C slave 0 register address from where to begin
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_DO.getValue(),0x01)); // reset AK8963
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_REG.getValue(),0x0B)); // I2C slave 0 register address from where to begin
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_DO.getValue(),0x01)); // reset AK8963
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_REG.getValue(),0x0A)); // I2C slave 0 register address from where to begin
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_DO.getValue(),magScale.getValue())); // register value to continuous measurement 16 bit
-        operations.add(new I2CWriteOperation(MPU9250Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_REG.getValue(),0x0A)); // I2C slave 0 register address from where to begin
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_DO.getValue(),magScale.getValue())); // register value to continuous measurement 16 bit
+        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
 
-        operations.add(new I2CWriteOperation(MPU9250Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
-        operations.add(new I2CWriteOperation(MPU9250Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
+        operations.add(new I2CWriteOperation(Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
+        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
 
         executeOperations(operations);
         paused = false;

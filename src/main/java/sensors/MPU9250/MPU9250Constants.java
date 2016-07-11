@@ -4,7 +4,7 @@ package sensors.MPU9250;
  * RPITank
  * Created by MAWood on 09/07/2016.
  */
-enum MPU9250Registers
+enum Registers
 {
     AK8963_ADDRESS   (0x0C),
     WHO_AM_I_AK8963  (0x00), // should return (0x48
@@ -138,7 +138,7 @@ enum MPU9250Registers
     ZA_OFFSET_L      (0x7E);
 
     private int value;
-    MPU9250Registers(int value)
+    Registers(int value)
     {
         this.value = value;
     }
