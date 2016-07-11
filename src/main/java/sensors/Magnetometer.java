@@ -9,7 +9,7 @@ import javafx.geometry.Point3D;
 public interface Magnetometer
 {
     float getHeading();
-    Data3D<Double> getGaussianData();
+    Data3D<Float> getGaussianData();
     float getMaxGauss();
     float getMinGauss();
 }

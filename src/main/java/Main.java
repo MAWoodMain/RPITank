@@ -19,9 +19,9 @@ public class Main
 
         for(int x=0; x<1000; x++)
         {
-            Data3D<Double> mag = mpu9250.getMag();
-            Data3D<Double> acc = mpu9250.getAccel();
-            Data3D<Double> gyr = mpu9250.getGyro();
+            Data3D<Float> mag = mpu9250.getGaussianData();
+            Data3D<Float> acc = mpu9250.getAcceleration();
+            Data3D<Float> gyr = mpu9250.getRotationalAcceleration();
             System.out.print(  "acc: " + String.format(format,acc.getX()) + ", " + String.format(format,acc.getY()) + ", " + String.format(format,acc.getZ()) + " ");
             System.out.print(  "gyr: " + String.format(format,gyr.getX()) + ", " + String.format(format,gyr.getY()) + ", " + String.format(format,gyr.getZ()) + " ");
             System.out.println("mag: " + String.format(format,mag.getX()) + ", " + String.format(format,mag.getY()) + ", " + String.format(format,mag.getZ()) + " ");

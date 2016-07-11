@@ -20,9 +20,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
-    private Data3D<Double> accel;
-    private Data3D<Double> gyro;
-    private Data3D<Double> mag;
+    private Data3D<Float> accel;
+    private Data3D<Float> gyro;
+    private Data3D<Float> mag;
     private float temp;
 
     private boolean paused;
@@ -119,20 +119,30 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         }
     }
 
+    public void pause()
+    {
+        paused = true;
+    }
+
+    public void unpause()
+    {
+        paused = false;
+    }
+
     @Override
-    public Data3D<Double> getAcceleration()
+    public Data3D<Float> getAcceleration()
     {
         return accel;
     }
 
     @Override
-    public Data3D<Double> getRotationalAcceleration()
+    public Data3D<Float> getRotationalAcceleration()
     {
         return gyro;
     }
 
     @Override
-    public Data3D<Double> getGaussianData()
+    public Data3D<Float> getGaussianData()
     {
         return mag;
     }

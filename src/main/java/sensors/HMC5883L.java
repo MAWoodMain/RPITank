@@ -104,18 +104,18 @@ public class HMC5883L implements Magnetometer
     }
 
     @Override
-    public Point3D getGaussianData()
+    public Data3D<Float> getGaussianData()
     {
         try
         {
-            return new Point3D(
+            return new Data3D<Float>(
                     readWord_2C(HMC5883L_X_ADR) * SCALE,
                     readWord_2C(HMC5883L_Y_ADR) * SCALE,
                     readWord_2C(HMC5883L_Z_ADR) * SCALE);
         } catch (IOException e)
         {
             e.printStackTrace();
-            return new Point3D(0,0,0);
+            return new Data3D<Float>(0f,0f,0f);
         }
     }
 
