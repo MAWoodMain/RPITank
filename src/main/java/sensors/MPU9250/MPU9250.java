@@ -20,10 +20,10 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
-    private Data3D<Float> accel;
-    private Data3D<Float> gyro;
-    private Data3D<Float> mag;
-    private float temp;
+    private CircularArrayRing<Data3D<Float>> accel;
+    private CircularArrayRing<Data3D<Float>> gyro;
+    private CircularArrayRing<Data3D<Float>> mag;
+    private CircularArrayRing<Float> temp;
 
     private boolean paused;
 
@@ -32,6 +32,10 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public MPU9250(int address) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
         paused = true;
+        accel = new CircularArrayRing<>();
+        gyro = new CircularArrayRing<>();
+        mag = new CircularArrayRing<>();
+        temp = new CircularArrayRing<>();
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         mpu9250 = bus.getDevice(address);
@@ -130,28 +134,58 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public Data3D<Float> getAcceleration()
+    public Data3D<Float> getLatestAcceleration()
     {
-        return accel;
+        return accel.get(0);
     }
 
     @Override
-    public Data3D<Float> getRotationalAcceleration()
+    public Data3D<Float> getAcceleration(int i)
     {
-        return gyro;
+        return accel.get(i);
     }
 
     @Override
-    public Data3D<Float> getGaussianData()
+    public int getReadingCount()
     {
-        return mag;
+        return 0;
+    }
+
+    @Override
+    public Data3D<Float> getLatestRotationalAcceleration()
+    {
+        return gyro.get(0);
+    }
+
+    @Override
+    public Data3D<Float> getRotationalAcceleration(int i)
+    {
+        return gyro.get(i);
+    }
+
+    @Override
+    public Data3D<Float> getLatestGaussianData()
+    {
+        return mag.get(0);
+    }
+
+    @Override
+    public Data3D<Float> getGaussianData(int i)
+    {
+        return mag.get(i);
     }
 
 
     @Override
-    public float getTemperature()
+    public float getLatestTemperature()
     {
-        return temp;
+        return temp.get(0);
+    }
+
+    @Override
+    public float getTemperature(int i)
+    {
+        return temp.get(i);
     }
 
     @Override

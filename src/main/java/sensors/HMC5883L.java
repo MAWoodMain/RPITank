@@ -13,7 +13,7 @@ import java.io.IOException;
 /*
  * 3 Axis compass
  */
-public class HMC5883L implements Magnetometer
+public class HMC5883L implements Magnetometer, Runnable
 {
     private final static int HMC5883L_ADDRESS                       = 0x1E;
 
@@ -30,13 +30,23 @@ public class HMC5883L implements Magnetometer
     private I2CBus bus;
     private I2CDevice hcm5883l;
 
+    private CircularArrayRing<Data3D<Float>> data;
+
+
+
     public HMC5883L() throws I2CFactory.UnsupportedBusNumberException
     {
-        this(HMC5883L_ADDRESS);
+        this(HMC5883L_ADDRESS,10);
     }
 
-    public HMC5883L(int address) throws I2CFactory.UnsupportedBusNumberException
+    public HMC5883L(int historySize) throws I2CFactory.UnsupportedBusNumberException
     {
+        this(HMC5883L_ADDRESS,historySize);
+    }
+
+    public HMC5883L(int address, int historySize) throws I2CFactory.UnsupportedBusNumberException
+    {
+        data = new CircularArrayRing<>(historySize);
         try
         {
             // Get i2c bus
@@ -69,25 +79,14 @@ public class HMC5883L implements Magnetometer
     public float getHeading()
     {
         double heading = 0f;
+        Data3D<Float> data = this.getLatestGaussianData();
+        float xOut = data.getX();
+        float yOut = data.getY();
+        float zOut = data.getZ();
 
-        byte[] w = new byte[] { (byte)HMC5883L_8_SAMPLES_15HZ,
-                (byte)HMC5883L_13_GAIN_LSB_GAUSS_1090,
-                (byte)HMC5883L_CONTINUOUS_SAMPLING };
-        try
-        {
-            hcm5883l.write(w, 0, 3); // BeginTrans, write 3 bytes, EndTrans.
-
-            double xOut = readWord_2C(HMC5883L_X_ADR) * SCALE;
-            double yOut = readWord_2C(HMC5883L_Y_ADR) * SCALE;
-            double zOut = readWord_2C(HMC5883L_Z_ADR) * SCALE;
-
-            heading = Math.atan2(yOut, xOut);
-            if (heading < 0)
-                heading += (2 * Math.PI);
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        heading = Math.atan2(yOut, xOut);
+        if (heading < 0)
+            heading += (2 * Math.PI);
         return (float) Math.toDegrees(heading);
     }
 
@@ -104,19 +103,52 @@ public class HMC5883L implements Magnetometer
     }
 
     @Override
-    public Data3D<Float> getGaussianData()
+    public Data3D<Float> getLatestGaussianData()
+    {
+        return data.get(0);
+    }
+
+
+    private void updateData()
     {
         try
         {
-            return new Data3D<Float>(
+            data.add(new Data3D<Float>(
                     readWord_2C(HMC5883L_X_ADR) * SCALE,
                     readWord_2C(HMC5883L_Y_ADR) * SCALE,
-                    readWord_2C(HMC5883L_Z_ADR) * SCALE);
+                    readWord_2C(HMC5883L_Z_ADR) * SCALE));
         } catch (IOException e)
         {
             e.printStackTrace();
-            return new Data3D<Float>(0f,0f,0f);
         }
+    }
+
+    @Override
+    public void run()
+    {
+        while(!Thread.interrupted())
+        {
+            updateData();
+            try
+            {
+                Thread.sleep(100);
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public Data3D<Float> getGaussianData(int i)
+    {
+        return data.get(i);
+    }
+
+    @Override
+    public int getReadingCount()
+    {
+        return 0;
     }
 
     public void close()
@@ -136,4 +168,5 @@ public class HMC5883L implements Magnetometer
             ie.printStackTrace();
         }
     }
+
 }

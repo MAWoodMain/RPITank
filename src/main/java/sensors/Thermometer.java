@@ -6,5 +6,6 @@ package sensors;
  */
 public interface Thermometer
 {
-    float getTemperature();
+    float getLatestTemperature();
+    float getTemperature(int i);
 }

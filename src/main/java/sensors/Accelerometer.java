@@ -8,7 +8,9 @@ import javafx.geometry.Point3D;
  */
 public interface Accelerometer
 {
-    Data3D<Float> getAcceleration();
+    Data3D<Float> getLatestAcceleration();
+    Data3D<Float> getAcceleration(int i);
+    int getReadingCount();
     float getMaxAcceleration();
     float getMinAcceleration();
 }
