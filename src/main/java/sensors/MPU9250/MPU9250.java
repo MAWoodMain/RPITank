@@ -20,9 +20,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
-    private CircularArrayRing<Data3D<Float>> accel;
-    private CircularArrayRing<Data3D<Float>> gyro;
-    private CircularArrayRing<Data3D<Float>> mag;
+    private CircularArrayRing<Data3D> accel;
+    private CircularArrayRing<Data3D> gyro;
+    private CircularArrayRing<Data3D> mag;
     private CircularArrayRing<Float> temp;
 
     private boolean paused;
@@ -134,13 +134,13 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public Data3D<Float> getLatestAcceleration()
+    public Data3D getLatestAcceleration()
     {
         return accel.get(0);
     }
 
     @Override
-    public Data3D<Float> getAcceleration(int i)
+    public Data3D getAcceleration(int i)
     {
         return accel.get(i);
     }
@@ -152,25 +152,25 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public Data3D<Float> getLatestRotationalAcceleration()
+    public Data3D getLatestRotationalAcceleration()
     {
         return gyro.get(0);
     }
 
     @Override
-    public Data3D<Float> getRotationalAcceleration(int i)
+    public Data3D getRotationalAcceleration(int i)
     {
         return gyro.get(i);
     }
 
     @Override
-    public Data3D<Float> getLatestGaussianData()
+    public Data3D getLatestGaussianData()
     {
         return mag.get(0);
     }
 
     @Override
-    public Data3D<Float> getGaussianData(int i)
+    public Data3D getGaussianData(int i)
     {
         return mag.get(i);
     }
