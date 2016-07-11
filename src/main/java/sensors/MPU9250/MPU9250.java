@@ -45,7 +45,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         mpu9250 = bus.getDevice(address);
 
         selfTest();
-        //calibrateGyroAcc();
+        calibrateGyroAcc();
         //initMPU9250();
         //initAK8963();
         //calibrateMag();
@@ -53,6 +53,140 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
 
         paused = false;
+    }
+
+    private void calibrateGyroAcc() throws IOException, InterruptedException
+    {
+        // Write a one to bit 7 reset bit; toggle reset device
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte)0x80);
+        Thread.sleep(100);
+
+        // get stable time source; Auto select clock source to be PLL gyroscope reference if ready
+        // else use the internal oscillator, bits 2:0 = 001
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte)0x01);
+        mpu9250.write(PWR_MGMT_2.getValue(),(byte)0x00);
+        Thread.sleep(200);
+
+
+        // Configure device for bias calculation
+        mpu9250.write(INT_ENABLE.getValue(),(byte) 0x00);   // Disable all interrupts
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x00);      // Disable FIFO
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte) 0x00);   // Turn on internal clock source
+        mpu9250.write(I2C_MST_CTRL.getValue(),(byte) 0x00); // Disable I2C master
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x00);    // Disable FIFO and I2C master modes
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x0C);    // Reset FIFO and DMP
+        Thread.sleep(15);
+
+        // Configure MPU6050 gyro and accelerometer for bias calculation
+        mpu9250.write(CONFIG.getValue(),(byte) 0x01);       // Set low-pass filter to 188 Hz
+        mpu9250.write(SMPLRT_DIV.getValue(),(byte) 0x00);   // Set sample rate to 1 kHz
+        mpu9250.write(GYRO_CONFIG.getValue(),(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
+        mpu9250.write(ACCEL_CONFIG.getValue(),(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
+
+        int gyrosensitivity = 131;     // = 131 LSB/degrees/sec
+        int accelsensitivity = 16384;  // = 16384 LSB/g
+
+        // Configure FIFO to capture accelerometer and gyro data for bias calculation
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x40);   // Enable FIFO
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
+        Thread.sleep(40); // accumulate 40 samples in 40 milliseconds = 480 bytes
+
+        // At end of sample accumulation, turn off FIFO sensor read
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
+        byte[] buffer = new byte[2];
+        mpu9250.read(FIFO_COUNTH.getValue(),buffer,0,2); // read FIFO sample count
+
+        int packetCount = (buffer[0] << 8) | buffer[1];
+        packetCount /= 12;
+
+        buffer = new byte[12];
+        int[] accelBias = new int[]{0,0,0};
+        int[] gyroBias = new int[]{0,0,0};
+
+        for(int s = 0; s < packetCount; s++)
+        {
+            mpu9250.read(FIFO_R_W.getValue(),buffer,0,12); // read FIFO sample count
+
+            accelBias[0] += (buffer[0] << 8) | buffer[1];
+            accelBias[1] += (buffer[2] << 8) | buffer[3];
+            accelBias[2] += (buffer[4] << 8) | buffer[5];
+
+            gyroBias[0] += (buffer[6] << 8) | buffer[7];
+            gyroBias[1] += (buffer[8] << 8) | buffer[9];
+            gyroBias[2] += (buffer[10] << 8) | buffer[11];
+        }
+
+
+        accelBias[0] /= packetCount;
+        accelBias[1] /= packetCount;
+        accelBias[2] /= packetCount;
+
+        gyroBias[0] /= packetCount;
+        gyroBias[1] /= packetCount;
+        gyroBias[2] /= packetCount;
+
+        if(accelBias[2] > 0L) {accelBias[2] -= accelsensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
+        else {accelBias[2] += accelsensitivity;}
+
+
+        // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
+        buffer[0] = (byte)((-gyroBias[0]/4  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
+        buffer[1] = (byte)((-gyroBias[0]/4)       & 0xFF); // Biases are additive, so change sign on calculated average gyro biases
+        buffer[2] = (byte)((-gyroBias[1]/4  >> 8) & 0xFF);
+        buffer[3] = (byte)((-gyroBias[1]/4)       & 0xFF);
+        buffer[4] = (byte)((-gyroBias[2]/4  >> 8) & 0xFF);
+        buffer[5] = (byte)((-gyroBias[2]/4)       & 0xFF);
+
+
+        // Push gyro biases to hardware registers
+        mpu9250.write(XG_OFFSET_H.getValue(), buffer[0]);
+        mpu9250.write(XG_OFFSET_L.getValue(), buffer[1]);
+        mpu9250.write(YG_OFFSET_H.getValue(), buffer[2]);
+        mpu9250.write(YG_OFFSET_L.getValue(), buffer[3]);
+        mpu9250.write(ZG_OFFSET_H.getValue(), buffer[4]);
+        mpu9250.write(ZG_OFFSET_L.getValue(), buffer[5]);
+
+        int[] accelBiasReg = new int[]{0,0,0};
+        mpu9250.read(XA_OFFSET_H.getValue(),buffer,0,2);
+        accelBiasReg[0] = (buffer[0] << 8) | buffer[1];
+        mpu9250.read(YA_OFFSET_H.getValue(),buffer,0,2);
+        accelBiasReg[1] = (buffer[0] << 8) | buffer[1];
+        mpu9250.read(ZA_OFFSET_H.getValue(),buffer,0,2);
+        accelBiasReg[2] = (buffer[0] << 8) | buffer[1];
+
+
+        int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
+        int[] mask_bit = new int[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
+
+        for(int s = 0; s < 3; s++) {
+            if((accelBiasReg[s] & mask)==1) mask_bit[s] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
+        }
+
+        // Construct total accelerometer bias, including calculated average accelerometer bias from above
+        accelBiasReg[0] -= (accelBias[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+        accelBiasReg[1] -= (accelBias[1]/8);
+        accelBiasReg[2] -= (accelBias[2]/8);
+
+        buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF);
+        buffer[1] = (byte)((accelBiasReg[0])      & 0xFF);
+        buffer[1] = (byte)(buffer[1] | mask_bit[0]); // preserve temperature compensation bit when writing back to accelerometer bias registers
+        buffer[2] = (byte)((accelBiasReg[1] >> 8) & 0xFF);
+        buffer[3] = (byte)((accelBiasReg[1])      & 0xFF);
+        buffer[3] = (byte)(buffer[3] | mask_bit[1]); // preserve temperature compensation bit when writing back to accelerometer bias registers
+        buffer[4] = (byte)((accelBiasReg[2] >> 8) & 0xFF);
+        buffer[5] = (byte)((accelBiasReg[2])      & 0xFF);
+        buffer[5] = (byte)(buffer[5] | mask_bit[2]); // preserve temperature compensation bit when writing back to accelerometer bias registers
+
+        // Apparently this is not working for the acceleration biases in the MPU-9250
+        // Are we handling the temperature correction bit properly?
+        // Push accelerometer biases to hardware registers
+        mpu9250.write(XA_OFFSET_H.getValue(), buffer[0]);
+        mpu9250.write(XA_OFFSET_L.getValue(), buffer[1]);
+        mpu9250.write(YA_OFFSET_H.getValue(), buffer[2]);
+        mpu9250.write(YA_OFFSET_L.getValue(), buffer[3]);
+        mpu9250.write(ZA_OFFSET_H.getValue(), buffer[4]);
+        mpu9250.write(ZA_OFFSET_L.getValue(), buffer[5]);
+
     }
 
     private void selfTest() throws IOException, InterruptedException
@@ -133,11 +267,11 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         factoryTrim[4] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
         factoryTrim[5] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
 
-        System.out.println("Accelerometer accuracy:");
+        System.out.println("Accelerometer accuracy:(% away from factory values)");
         System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0] + "%");
         System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1] + "%");
         System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2] + "%");
-        System.out.println("Gyroscope accuracy:");
+        System.out.println("Gyroscope accuracy:(% away from factory values)");
         System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[3] + "%");
         System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[4] + "%");
         System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[5] + "%");
