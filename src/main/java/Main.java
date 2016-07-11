@@ -19,12 +19,12 @@ public class Main
 
         for(int x=0; x<1000; x++)
         {
-            Data3D mag = mpu9250.getLatestGaussianData();
-            Data3D acc = mpu9250.getLatestAcceleration();
-            Data3D gyr = mpu9250.getLatestRotationalAcceleration();
-            System.out.print(  "acc: " + String.format(format,acc.getX()) + ", " + String.format(format,acc.getY()) + ", " + String.format(format,acc.getZ()) + " ");
-            System.out.print(  "gyr: " + String.format(format,gyr.getX()) + ", " + String.format(format,gyr.getY()) + ", " + String.format(format,gyr.getZ()) + " ");
-            System.out.println("mag: " + String.format(format,mag.getX()) + ", " + String.format(format,mag.getY()) + ", " + String.format(format,mag.getZ()) + " ");
+            //Data3D mag = mpu9250.getLatestGaussianData();
+            //Data3D acc = mpu9250.getLatestAcceleration();
+            //Data3D gyr = mpu9250.getLatestRotationalAcceleration();
+            //System.out.print(  "acc: " + String.format(format,acc.getX()) + ", " + String.format(format,acc.getY()) + ", " + String.format(format,acc.getZ()) + " ");
+            //System.out.print(  "gyr: " + String.format(format,gyr.getX()) + ", " + String.format(format,gyr.getY()) + ", " + String.format(format,gyr.getZ()) + " ");
+            //System.out.println("mag: " + String.format(format,mag.getX()) + ", " + String.format(format,mag.getY()) + ", " + String.format(format,mag.getZ()) + " ");
             //System.out.println(mpu9250.getHeading());
             Thread.sleep(100);
         }
