@@ -2,9 +2,9 @@ package sensors;
 
 public class Quaternion 
 {
-	float[] q;
+	float a,b,c,d;
 	public Quaternion()
 	{
-		q = new float [4];
+		a=b=c=d=0;
 	}
 }
