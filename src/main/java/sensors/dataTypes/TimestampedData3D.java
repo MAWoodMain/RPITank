@@ -1,4 +1,6 @@
-package sensors;
+package sensors.dataTypes;
+
+import sensors.dataTypes.Data3D;
 
 /**
  * RPITank

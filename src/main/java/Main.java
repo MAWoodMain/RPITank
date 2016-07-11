@@ -1,7 +1,7 @@
 
 
 import com.pi4j.io.i2c.I2CFactory;
-import sensors.Data3D;
+import sensors.dataTypes.Data3D;
 import sensors.MPU9250.MPU9250;
 
 import java.io.IOException;

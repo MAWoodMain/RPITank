@@ -1,5 +1,8 @@
 package sensors;
 
+import sensors.dataTypes.Data3D;
+import sensors.dataTypes.Quaternion;
+
 public class SensorFusion {
 
 	static float[] eInt = new float[3];

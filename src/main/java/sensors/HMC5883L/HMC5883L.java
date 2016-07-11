@@ -1,4 +1,4 @@
-package sensors; /**
+package sensors.HMC5883L; /**
  * RPITank
  * Created by MAWood on 03/07/2016.
  */
@@ -6,7 +6,9 @@ package sensors; /**
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import javafx.geometry.Point3D;
+import sensors.dataTypes.CircularArrayRing;
+import sensors.dataTypes.Data3D;
+import sensors.interfaces.Magnetometer;
 
 import java.io.IOException;
 

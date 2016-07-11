@@ -1,6 +1,6 @@
-package sensors;
+package sensors.interfaces;
 
-import javafx.geometry.Point3D;
+import sensors.dataTypes.Data3D;
 
 /**
  * RPITank

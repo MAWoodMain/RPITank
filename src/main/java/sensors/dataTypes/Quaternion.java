@@ -1,8 +1,8 @@
-package sensors;
+package sensors.dataTypes;
 
 public class Quaternion 
 {
-	float a,b,c,d;
+	public float a,b,c,d;
 	public Quaternion()
 	{
 		a=b=c=d=0;

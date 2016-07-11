@@ -3,8 +3,13 @@ package sensors.MPU9250;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import javafx.geometry.Point3D;
-import sensors.*;
+import sensors.dataTypes.CircularArrayRing;
+import sensors.dataTypes.Data3D;
+import sensors.dataTypes.I2CWriteOperation;
+import sensors.interfaces.Accelerometer;
+import sensors.interfaces.Gyroscope;
+import sensors.interfaces.Magnetometer;
+import sensors.interfaces.Thermometer;
 
 import java.io.IOException;
 import java.util.ArrayList;
