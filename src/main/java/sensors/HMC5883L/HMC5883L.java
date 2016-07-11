@@ -8,6 +8,7 @@ import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
 import sensors.dataTypes.Data3D;
+import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Magnetometer;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class HMC5883L implements Magnetometer, Runnable
     private I2CBus bus;
     private I2CDevice hcm5883l;
 
-    private CircularArrayRing<Data3D> data;
+    private CircularArrayRing<TimestampedData3D> data;
 
 
 
@@ -115,7 +116,7 @@ public class HMC5883L implements Magnetometer, Runnable
     {
         try
         {
-            data.add(new Data3D(
+            data.add(new TimestampedData3D(
                     readWord_2C(HMC5883L_X_ADR) * SCALE,
                     readWord_2C(HMC5883L_Y_ADR) * SCALE,
                     readWord_2C(HMC5883L_Z_ADR) * SCALE));

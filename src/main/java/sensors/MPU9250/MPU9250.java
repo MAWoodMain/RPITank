@@ -6,6 +6,7 @@ import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
 import sensors.dataTypes.Data3D;
 import sensors.dataTypes.I2CWriteOperation;
+import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
 import sensors.interfaces.Magnetometer;
@@ -25,9 +26,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
-    private CircularArrayRing<Data3D> accel;
-    private CircularArrayRing<Data3D> gyro;
-    private CircularArrayRing<Data3D> mag;
+    private CircularArrayRing<TimestampedData3D> accel;
+    private CircularArrayRing<TimestampedData3D> gyro;
+    private CircularArrayRing<TimestampedData3D> mag;
     private CircularArrayRing<Float> temp;
 
     private boolean paused;
