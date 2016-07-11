@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
-import sensors.dataTypes.Data3D;
 import sensors.dataTypes.I2CWriteOperation;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
@@ -140,13 +139,13 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public Data3D getLatestAcceleration()
+    public TimestampedData3D getLatestAcceleration()
     {
         return accel.get(0);
     }
 
     @Override
-    public Data3D getAcceleration(int i)
+    public TimestampedData3D getAcceleration(int i)
     {
         return accel.get(i);
     }
@@ -158,25 +157,25 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public Data3D getLatestRotationalAcceleration()
+    public TimestampedData3D getLatestRotationalAcceleration()
     {
         return gyro.get(0);
     }
 
     @Override
-    public Data3D getRotationalAcceleration(int i)
+    public TimestampedData3D getRotationalAcceleration(int i)
     {
         return gyro.get(i);
     }
 
     @Override
-    public Data3D getLatestGaussianData()
+    public TimestampedData3D getLatestGaussianData()
     {
         return mag.get(0);
     }
 
     @Override
-    public Data3D getGaussianData(int i)
+    public TimestampedData3D getGaussianData(int i)
     {
         return mag.get(i);
     }

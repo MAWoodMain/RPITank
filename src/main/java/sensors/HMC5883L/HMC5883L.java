@@ -106,7 +106,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public Data3D getLatestGaussianData()
+    public TimestampedData3D getLatestGaussianData()
     {
         return data.get(0);
     }
@@ -143,7 +143,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public Data3D getGaussianData(int i)
+    public TimestampedData3D getGaussianData(int i)
     {
         return data.get(i);
     }
