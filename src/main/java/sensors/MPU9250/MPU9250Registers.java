@@ -150,34 +150,71 @@ enum MPU9250Registers
 
 enum MagScale
 {
-    MFS_14BIT(0x02),
-    MFS_16BIT(0x12);
+    MFS_14BIT(0x02,10.*4912./8190.),
+    MFS_16BIT(0x12,10.*4912./32760.0);
 
-    private int value;
-    MagScale(int value)
+    private final int value;
+    private final double res;
+    MagScale(int value, double res)
     {
         this.value = value;
+        this.res = res;
     }
     public int getValue()
     {
         return value;
+    }
+    public double getRes()
+    {
+        return res;
     }
 }
 
 enum AccScale
 {
-    AFS_2G(0x00),
-    AFS_4G(0x08),
-    AFS_8G(0x10),
-    AFS_16G(0x18);
+    AFS_2G(0x00,2.0/32768.0),
+    AFS_4G(0x08,4.0/32768.0),
+    AFS_8G(0x10,8.0/32768.0),
+    AFS_16G(0x18,16.0/32768.0);
 
-    private int value;
-    AccScale(int value)
+    private final int value;
+    private final double res;
+    AccScale(int value, double res)
     {
         this.value = value;
+        this.res = res;
     }
     public int getValue()
     {
         return value;
     }
+    public double getRes()
+    {
+        return res;
+    }
 }
+
+enum GyrScale
+{
+    GFS_250DPS(0x00,250.0/32768.0),
+    GFS_500DPS(0x08,500.0/32768.0),
+    GFS_1000DPS(0x10,1000.0/32768.0),
+    GFS_2000DPS(0x18,2000.0/32768.0);
+
+    private final int value;
+    private final double res;
+    GyrScale(int value, double res)
+    {
+        this.value = value;
+        this.res = res;
+    }
+    public int getValue()
+    {
+        return value;
+    }
+    public double getRes()
+    {
+        return res;
+    }
+}
+
