@@ -44,8 +44,8 @@ public class Data3D {
 		// Normalise accelerometer measurement
 		norm = (float)Math.sqrt(x*x + y*y + z*z);
 		if (norm == 0.0f)
-			return; // handle NaN
-		norm = 1.0f / norm;
+			throw new ArithmeticException(); // handle NaN
+		norm = 1f / norm;
 		x *= norm;
 		y *= norm;
 		z *= norm;
