@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
-import sensors.dataTypes.I2CWriteOperation;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
@@ -12,8 +11,8 @@ import sensors.interfaces.Magnetometer;
 import sensors.interfaces.Thermometer;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
+import static sensors.MPU9250.Registers.*;
 
 /**
  * RPITank
@@ -45,44 +44,103 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         mpu9250 = bus.getDevice(address);
 
-        ArrayList<I2CWriteOperation> operations = new ArrayList<>();
+        selfTest();
+        //calibrateGyroAcc();
+        //initMPU9250();
+        //initAK8963();
+        //calibrateMag();
 
-        //operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x80)); // reset device
-        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x01)); // reset device
 
-        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_1.getValue(),0x01)); // clock source
-        operations.add(new I2CWriteOperation(Registers.PWR_MGMT_2.getValue(),0x00)); // enable acc and gyro
 
-        //operations.add(new I2CWriteOperation(Registers.CONFIG.getValue(),0x01)); // use DLPF set gyroscope bandwidth 184Hz
-        operations.add(new I2CWriteOperation(Registers.CONFIG.getValue(),0x03));
-        operations.add(new I2CWriteOperation(Registers.SMPLRT_DIV.getValue(), 0x04));
-
-        operations.add(new I2CWriteOperation(Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
-
-        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
-
-        //operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG2.getValue(),0x09)); // set acc data rates, enable acc LPF, bandwidth 184Hz
-        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG2.getValue(),0x15)); // set acc data rates, enable acc LPF, bandwidth 184Hz
-        operations.add(new I2CWriteOperation(Registers.INT_PIN_CFG.getValue(),0x30));
-
-        operations.add(new I2CWriteOperation(Registers.USER_CTRL.getValue(),0x20)); // I2C master mode
-        operations.add(new I2CWriteOperation(Registers.I2C_MST_CTRL.getValue(),0x0D)); // I2C configuration multi-master IIC 400KHz
-
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_ADDR.getValue(),0x0C)); // set the I2C slave address of AK8963
-
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_REG.getValue(),0x0B)); // I2C slave 0 register address from where to begin
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_DO.getValue(),0x01)); // reset AK8963
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
-
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_REG.getValue(),0x0A)); // I2C slave 0 register address from where to begin
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_DO.getValue(),magScale.getValue())); // register value to continuous measurement 16 bit
-        operations.add(new I2CWriteOperation(Registers.I2C_SLV0_CTRL.getValue(),0x81)); // Enable I2C and set 1 byte
-
-        operations.add(new I2CWriteOperation(Registers.GYRO_CONFIG.getValue(),gyrScale.getValue())); // set gyro resolution
-        operations.add(new I2CWriteOperation(Registers.ACCEL_CONFIG.getValue(),accScale.getValue())); // set accelerometer resolution
-
-        executeOperations(operations);
         paused = false;
+    }
+
+    private void selfTest() throws IOException, InterruptedException
+    {
+        // Set gyro sample rate to 1 kHz
+        mpu9250.write(SMPLRT_DIV.getValue(),(byte)0x00);
+        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+        mpu9250.write(CONFIG.getValue(),(byte)0x02);
+        // Set full scale range for the gyro to 250 dps
+        mpu9250.write(GYRO_CONFIG.getValue(),GyrScale.GFS_250DPS.getValue());
+        // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
+        mpu9250.write(ACCEL_CONFIG2.getValue(),(byte)0x02);
+        // Set full scale range for the accelerometer to 2 g
+        mpu9250.write(ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
+
+        final int TEST_LENGTH = 200;
+        byte[] buffer = new byte[]{0,0,0,0,0,0};
+        int ax,ay,az,gx,gy,gz;
+        ax=ay=az=gx=gy=gz=0;
+
+        for(int s=0; s<TEST_LENGTH; s++)
+        {
+            mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
+            ax += ((buffer[0] << 8) | buffer[1]);
+            ay += ((buffer[2] << 8) | buffer[3]);
+            az += ((buffer[4] << 8) | buffer[5]);
+
+            mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
+            gx += ((buffer[0] << 8) | buffer[1]);
+            gy += ((buffer[2] << 8) | buffer[3]);
+            gz += ((buffer[4] << 8) | buffer[5]);
+        }
+
+        int[] aAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
+        int[] gAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+
+        mpu9250.write(ACCEL_CONFIG.getValue(), (byte)0xE0);
+        mpu9250.write(GYRO_CONFIG.getValue(), (byte)0xE0);
+        Thread.sleep(25);
+
+        ax=ay=az=gx=gy=gz=0;
+
+        for(int s=0; s<TEST_LENGTH; s++)
+        {
+            mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
+            gx += ((buffer[0] << 8) | buffer[1]);
+            gy += ((buffer[2] << 8) | buffer[3]);
+            gz += ((buffer[4] << 8) | buffer[5]);
+
+            mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
+            ax += ((buffer[0] << 8) | buffer[1]);
+            ay += ((buffer[2] << 8) | buffer[3]);
+            az += ((buffer[4] << 8) | buffer[5]);
+        }
+
+        int[] aSTAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
+        int[] gSTAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+
+        mpu9250.write(GYRO_CONFIG.getValue(),GyrScale.GFS_250DPS.getValue());
+        mpu9250.write(ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
+        Thread.sleep(25);
+
+        int[] selfTest = new int[6];
+
+        selfTest[0] = mpu9250.read(SELF_TEST_X_ACCEL.getValue());
+        selfTest[1] = mpu9250.read(SELF_TEST_Y_ACCEL.getValue());
+        selfTest[2] = mpu9250.read(SELF_TEST_Z_ACCEL.getValue());
+        selfTest[3] = mpu9250.read(SELF_TEST_X_GYRO.getValue());
+        selfTest[4] = mpu9250.read(SELF_TEST_Y_GYRO.getValue());
+        selfTest[5] = mpu9250.read(SELF_TEST_Z_GYRO.getValue());
+
+        float[] factoryTrim = new float[6];
+
+        factoryTrim[0] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[0] - 1.0);
+        factoryTrim[1] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[1] - 1.0);
+        factoryTrim[2] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[2] - 1.0);
+        factoryTrim[3] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[3] - 1.0);
+        factoryTrim[4] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
+        factoryTrim[5] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
+
+        System.out.println("Accelerometer accuracy:");
+        System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0] + "%");
+        System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1] + "%");
+        System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2] + "%");
+        System.out.println("Gyroscope accuracy:");
+        System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[3] + "%");
+        System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[4] + "%");
+        System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[5] + "%");
     }
 
     private void updateData()
@@ -95,21 +153,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         byte high = (byte)mpu9250.read(address);
         byte low = (byte)mpu9250.read(address + 1);
         return (high<<8 | low); // construct 16 bit integer from two bytes
-    }
-
-    private void executeOperations(List<I2CWriteOperation> operations) throws IOException
-    {
-        for(I2CWriteOperation operation:operations)
-        {
-            mpu9250.write(operation.getAddress(), operation.getEncodedValue());
-            try
-            {
-                Thread.sleep(100);
-            } catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override

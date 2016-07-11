@@ -28,6 +28,10 @@ enum Registers
     SELF_TEST_Y_GYRO (0x01),
     SELF_TEST_Z_GYRO (0x02),
 
+    SELF_TEST_X_ACCEL(0x0D),
+    SELF_TEST_Y_ACCEL(0x0E),
+    SELF_TEST_Z_ACCEL(0x0F),
+
     SELF_TEST_A      (0x10),
 
     XG_OFFSET_H      (0x13),  // User-defined trim values for gyroscope
@@ -160,9 +164,9 @@ enum MagScale
         this.value = value;
         this.res = res;
     }
-    public int getValue()
+    public byte getValue()
     {
-        return value;
+        return (byte)value;
     }
     public double getRes()
     {
@@ -188,9 +192,9 @@ enum AccScale
         this.value = value;
         this.minMax = minMax;
     }
-    public int getValue()
+    public byte getValue()
     {
-        return value;
+        return (byte)value;
     }
     public double getRes()
     {
@@ -216,9 +220,9 @@ enum GyrScale
         this.value = value;
         this.minMax = minMax;
     }
-    public int getValue()
+    public byte getValue()
     {
-        return value;
+        return (byte)value;
     }
     public double getRes()
     {

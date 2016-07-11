@@ -13,8 +13,14 @@ public class TimestampedData3D extends Data3D
         super(x, y, z);
         this.nanoTime = nanoTime;
     }
+
     public TimestampedData3D(float x, float y, float z)
     {
         this(x, y, z, System.nanoTime());
+    }
+
+    public TimestampedData3D(Data3D data)
+    {
+        this(data.getX(),data.getY(),data.getZ());
     }
 }
