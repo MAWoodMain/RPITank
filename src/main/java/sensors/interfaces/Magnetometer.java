@@ -1,6 +1,6 @@
 package sensors.interfaces;
 
-import sensors.dataTypes.Data3D;
+import sensors.dataTypes.TimestampedData3D;
 
 /**
  * RPITank
@@ -9,8 +9,8 @@ import sensors.dataTypes.Data3D;
 public interface Magnetometer
 {
     float getHeading();
-    Data3D getLatestGaussianData();
-    Data3D getGaussianData(int i);
+    TimestampedData3D getLatestGaussianData();
+    TimestampedData3D getGaussianData(int i);
     int getReadingCount();
     float getMaxGauss();
     float getMinGauss();

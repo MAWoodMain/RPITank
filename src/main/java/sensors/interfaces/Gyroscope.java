@@ -1,6 +1,6 @@
 package sensors.interfaces;
 
-import sensors.dataTypes.Data3D;
+import sensors.dataTypes.TimestampedData3D;
 
 /**
  * RPITank
@@ -8,8 +8,8 @@ import sensors.dataTypes.Data3D;
  */
 public interface Gyroscope
 {
-    Data3D getLatestRotationalAcceleration();
-    Data3D getRotationalAcceleration(int i);
+    TimestampedData3D getLatestRotationalAcceleration();
+    TimestampedData3D getRotationalAcceleration(int i);
     int getReadingCount();
     float getMaxRotationalAcceleration();
     float getMinRotationalAcceleration();

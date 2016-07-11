@@ -1,6 +1,6 @@
 package sensors.interfaces;
 
-import sensors.dataTypes.Data3D;
+import sensors.dataTypes.TimestampedData3D;
 
 /**
  * RPITank
@@ -8,8 +8,8 @@ import sensors.dataTypes.Data3D;
  */
 public interface Accelerometer
 {
-    Data3D getLatestAcceleration();
-    Data3D getAcceleration(int i);
+    TimestampedData3D getLatestAcceleration();
+    TimestampedData3D getAcceleration(int i);
     int getReadingCount();
     float getMaxAcceleration();
     float getMinAcceleration();
