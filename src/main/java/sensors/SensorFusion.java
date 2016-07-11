@@ -12,7 +12,7 @@ public class SensorFusion {
 	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of
 	// the magnetometer;
 	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of
-	// accelerometer and gyro!
+	// accelerometer and g.getY()ro!
 	// We have to make some allowance for this orientationmismatch in feeding
 	// the output to the quaternion filter.
 	// For the MPU-9250, we have chosen a magnetic rotation that keeps the
@@ -20,12 +20,12 @@ public class SensorFusion {
 	// in the LSM9DS0 sensor. This rotation can be modified to allow any
 	// convenient orientation convention.
 	// This is ok by aircraft orientation standards!
-	// Pass gyro rate as rad/s
+	// Pass g.getY()ro rate as rad/s
 
-	// MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f,
-	// gz*PI/180.0f, my, mx, mz);
-	// MahonyQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f,
-	// gz*PI/180.0f, my, mx, mz);
+	// MadgwickQuaternionUpdate(ax, ay, az, g.getX()*PI/180.0f, g.getY()*PI/180.0f,
+	// g.getZ()*PI/180.0f,m.getY(), m.getX(),m.getZ());
+	// MahonyQuaternionUpdate(ax, ay, az, g.getX()*PI/180.0f, g.getY()*PI/180.0f,
+	// g.getZ()*PI/180.0f,m.getY(), m.getX(),m.getZ());
 
 	// Implementation of Sebastian Madgwick's
 	// "...efficient orientation filter for... inertial/magnetic sensor arrays"
@@ -40,8 +40,9 @@ public class SensorFusion {
 	// but is much less computationally intensive---it can be performed on a 3.3
 	// V Pro Mini operating at 8 MHz!
 
-	void MadgwickQuaternionUpdate( float ax, float ay, float az,
-			float gx, float gy, float gz, float mx, float my, float mz) {
+	void MadgwickQuaternionUpdate(Data3D a, Data3D g, Data3D m)
+
+	{
 		float q1 = q.a, q2 = q.b, q3 = q.c, q4 = q.d; // short name local
 														// variable for
 														// readability
@@ -74,74 +75,60 @@ public class SensorFusion {
 		float q3q4 = q3 * q4;
 		float q4q4 = q4 * q4;
 
-		// Normalise accelerometer measurement
-		norm = (float) Math.sqrt(ax * ax + ay * ay + az * az);
-		if (norm == 0.0f)
-			return; // handle NaN
-		norm = 1.0f / norm;
-		ax *= norm;
-		ay *= norm;
-		az *= norm;
+		
+		a.normalize(); // Normalise accelerometer measurement
+		m.normalize(); // Normalise magnetometer measurement
 
-		// Normalise magnetometer measurement
-		norm = (float) Math.sqrt(mx * mx + my * my + mz * mz);
-		if (norm == 0.0f)
-			return; // handle NaN
-		norm = 1.0f / norm;
-		mx *= norm;
-		my *= norm;
-		mz *= norm;
 
 		// Reference direction of Earth's magnetic field
-		_2q1mx = 2.0f * q1 * mx;
-		_2q1my = 2.0f * q1 * my;
-		_2q1mz = 2.0f * q1 * mz;
-		_2q2mx = 2.0f * q2 * mx;
-		hx = mx * q1q1 - _2q1my * q4 + _2q1mz * q3 + mx * q2q2 + _2q2 * my * q3
-				+ _2q2 * mz * q4 - mx * q3q3 - mx * q4q4;
-		hy = _2q1mx * q4 + my * q1q1 - _2q1mz * q2 + _2q2mx * q3 - my * q2q2
-				+ my * q3q3 + _2q3 * mz * q4 - my * q4q4;
+		_2q1mx = 2.0f * q1 * m.getX();
+		_2q1my = 2.0f * q1 *m.getY();
+		_2q1mz = 2.0f * q1 *m.getZ();
+		_2q2mx = 2.0f * q2 * m.getX();
+		hx = m.getX() * q1q1 - _2q1my * q4 + _2q1mz * q3 + m.getX() * q2q2 + _2q2 *m.getY() * q3
+				+ _2q2 *m.getZ() * q4 - m.getX() * q3q3 - m.getX() * q4q4;
+		hy = _2q1mx * q4 +m.getY() * q1q1 - _2q1mz * q2 + _2q2mx * q3 -m.getY() * q2q2
+				+m.getY() * q3q3 + _2q3 *m.getZ() * q4 -m.getY() * q4q4;
 		_2bx = (float) Math.sqrt(hx * hx + hy * hy);
-		_2bz = -_2q1mx * q3 + _2q1my * q2 + mz * q1q1 + _2q2mx * q4 - mz * q2q2
-				+ _2q3 * my * q4 - mz * q3q3 + mz * q4q4;
+		_2bz = -_2q1mx * q3 + _2q1my * q2 +m.getZ() * q1q1 + _2q2mx * q4 -m.getZ() * q2q2
+				+ _2q3 *m.getY() * q4 -m.getZ() * q3q3 +m.getZ() * q4q4;
 		_4bx = 2.0f * _2bx;
 		_4bz = 2.0f * _2bz;
 
 		// Gradient decent algorithm corrective step
-		s1 = -_2q3 * (2.0f * q2q4 - _2q1q3 - ax) + _2q2
-				* (2.0f * q1q2 + _2q3q4 - ay) - _2bz * q3
-				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
+		s1 = -_2q3 * (2.0f * q2q4 - _2q1q3 - a.getX()) + _2q2
+				* (2.0f * q1q2 + _2q3q4 - a.getY()) - _2bz * q3
+				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - m.getX())
 				+ (-_2bx * q4 + _2bz * q2)
-				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx
+				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) -m.getY()) + _2bx
 				* q3
-				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-		s2 = _2q4 * (2.0f * q2q4 - _2q1q3 - ax) + _2q1
-				* (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * q2
-				* (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az) + _2bz * q4
-				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
+				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) -m.getZ());
+		s2 = _2q4 * (2.0f * q2q4 - _2q1q3 - a.getX()) + _2q1
+				* (2.0f * q1q2 + _2q3q4 - a.getY()) - 4.0f * q2
+				* (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - a.getZ()) + _2bz * q4
+				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - m.getX())
 				+ (_2bx * q3 + _2bz * q1)
-				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my)
+				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) -m.getY())
 				+ (_2bx * q4 - _4bz * q2)
-				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-		s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - ax) + _2q4
-				* (2.0f * q1q2 + _2q3q4 - ay) - 4.0f * q3
-				* (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - az)
+				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) -m.getZ());
+		s3 = -_2q1 * (2.0f * q2q4 - _2q1q3 - a.getX()) + _2q4
+				* (2.0f * q1q2 + _2q3q4 - a.getY()) - 4.0f * q3
+				* (1.0f - 2.0f * q2q2 - 2.0f * q3q3 - a.getZ())
 				+ (-_4bx * q3 - _2bz * q1)
-				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
+				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - m.getX())
 				+ (_2bx * q2 + _2bz * q4)
-				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my)
+				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) -m.getY())
 				+ (_2bx * q1 - _4bz * q3)
-				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-		s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - ax) + _2q3
-				* (2.0f * q1q2 + _2q3q4 - ay) + (-_4bx * q4 + _2bz * q2)
-				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
+				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) -m.getZ());
+		s4 = _2q2 * (2.0f * q2q4 - _2q1q3 - a.getX()) + _2q3
+				* (2.0f * q1q2 + _2q3q4 - a.getY()) + (-_4bx * q4 + _2bz * q2)
+				* (_2bx * (0.5f - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - m.getX())
 				+ (-_2bx * q1 + _2bz * q3)
-				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) - my) + _2bx
+				* (_2bx * (q2q3 - q1q4) + _2bz * (q1q2 + q3q4) -m.getY()) + _2bx
 				* q2
-				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) - mz);
-		norm = (float) Math.sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4); // normalise
-																			// step
-																			// magnitude
+				* (_2bx * (q1q3 + q2q4) + _2bz * (0.5f - q2q2 - q3q3) -m.getZ());
+		
+		norm = (float) Math.sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4); // normalise step magnitude
 		norm = 1.0f / norm;
 		s1 *= norm;
 		s2 *= norm;
@@ -149,10 +136,10 @@ public class SensorFusion {
 		s4 *= norm;
 
 		// Compute rate of change of quaternion
-		qDot1 = 0.5f * (-q2 * gx - q3 * gy - q4 * gz) - beta * s1;
-		qDot2 = 0.5f * (q1 * gx + q3 * gz - q4 * gy) - beta * s2;
-		qDot3 = 0.5f * (q1 * gy - q2 * gz + q4 * gx) - beta * s3;
-		qDot4 = 0.5f * (q1 * gz + q2 * gy - q3 * gx) - beta * s4;
+		qDot1 = 0.5f * (-q2 * g.getX() - q3 * g.getY() - q4 * g.getZ()) - beta * s1;
+		qDot2 = 0.5f * (q1 * g.getX() + q3 * g.getZ() - q4 * g.getY()) - beta * s2;
+		qDot3 = 0.5f * (q1 * g.getY() - q2 * g.getZ() + q4 * g.getX()) - beta * s3;
+		qDot4 = 0.5f * (q1 * g.getZ() + q2 * g.getY() - q3 * g.getX()) - beta * s4;
 
 		// Integrate to yield quaternion
 		q1 += qDot1 * deltat;
@@ -172,9 +159,7 @@ public class SensorFusion {
 	// Similar to Madgwick scheme but uses proportional and integral filtering
 	// on the error between estimated reference vectors and
 	// measured ones.
-	void MahonyQuaternionUpdate(float ax, float ay, float az,
-			float gx, float gy, float gz, float mx, float my, float mz,
-			float deltat, float beta)
+	void MahonyQuaternionUpdate(Data3D a, Data3D g, Data3D m)
 
 	{
 		float q1 = q.a, q2 = q.b, q3 = q.c, q4 = q.d; // short name local
@@ -198,31 +183,17 @@ public class SensorFusion {
 		float q3q4 = q3 * q4;
 		float q4q4 = q4 * q4;
 
-		// Normalise accelerometer measurement
-		norm = (float) Math.sqrt(ax * ax + ay * ay + az * az);
-		if (norm == 0.0f)
-			return; // handle NaN
-		norm = 1.0f / norm; // use reciprocal for division
-		ax *= norm;
-		ay *= norm;
-		az *= norm;
-
-		// Normalise magnetometer measurement
-		norm = (float) Math.sqrt(mx * mx + my * my + mz * mz);
-		if (norm == 0.0f)
-			return; // handle NaN
-		norm = 1.0f / norm; // use reciprocal for division
-		mx *= norm;
-		my *= norm;
-		mz *= norm;
-
+		
+		a.normalize();// Normalise accelerometer measurement
+		m.normalize();// Normalise magnetometer measurement
+		
 		// Reference direction of Earth's magnetic field
-		hx = 2.0f * mx * (0.5f - q3q3 - q4q4) + 2.0f * my * (q2q3 - q1q4)
-				+ 2.0f * mz * (q2q4 + q1q3);
-		hy = 2.0f * mx * (q2q3 + q1q4) + 2.0f * my * (0.5f - q2q2 - q4q4)
-				+ 2.0f * mz * (q3q4 - q1q2);
+		hx = 2.0f * m.getX() * (0.5f - q3q3 - q4q4) + 2.0f *m.getY() * (q2q3 - q1q4)
+				+ 2.0f *m.getZ() * (q2q4 + q1q3);
+		hy = 2.0f * m.getX() * (q2q3 + q1q4) + 2.0f *m.getY() * (0.5f - q2q2 - q4q4)
+				+ 2.0f *m.getZ() * (q3q4 - q1q2);
 		bx = (float) Math.sqrt((hx * hx) + (hy * hy));
-		bz = 2.0f * mx * (q2q4 - q1q3) + 2.0f * my * (q3q4 + q1q2) + 2.0f * mz
+		bz = 2.0f * m.getX() * (q2q4 - q1q3) + 2.0f *m.getY() * (q3q4 + q1q2) + 2.0f *m.getZ()
 				* (0.5f - q2q2 - q3q3);
 
 		// Estimated direction of gravity and magnetic field
@@ -235,9 +206,9 @@ public class SensorFusion {
 
 		// Error is cross product between estimated direction and measured
 		// direction of gravity
-		ex = (ay * vz - az * vy) + (my * wz - mz * wy);
-		ey = (az * vx - ax * vz) + (mz * wx - mx * wz);
-		ez = (ax * vy - ay * vx) + (mx * wy - my * wx);
+		ex = (a.getY() * vz - a.getZ() * vy) + (m.getY() * wz -m.getZ() * wy);
+		ey = (a.getZ() * vx - a.getX() * vz) + (m.getZ() * wx -m.getX() * wz);
+		ez = (a.getX() * vy - a.getY() * vx) + (m.getX() * wy -m.getY() * wx);
 		if (Ki > 0.0f) {
 			eInt[0] += ex; // accumulate integral error
 			eInt[1] += ey;
@@ -249,18 +220,18 @@ public class SensorFusion {
 		}
 
 		// Apply feedback terms
-		gx = gx + Kp * ex + Ki * eInt[0];
-		gy = gy + Kp * ey + Ki * eInt[1];
-		gz = gz + Kp * ez + Ki * eInt[2];
+		g.setX( g.getX() + Kp * ex + Ki * eInt[0]);
+		g.setY( g.getY() + Kp * ey + Ki * eInt[1]);
+		g.setZ( g.getZ() + Kp * ez + Ki * eInt[2]);
 
 		// Integrate rate of change of quaternion
 		pa = q2;
 		pb = q3;
 		pc = q4;
-		q1 = q1 + (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltat);
-		q2 = pa + (q1 * gx + pb * gz - pc * gy) * (0.5f * deltat);
-		q3 = pb + (q1 * gy - pa * gz + pc * gx) * (0.5f * deltat);
-		q4 = pc + (q1 * gz + pa * gy - pb * gx) * (0.5f * deltat);
+		q1 = q1 + (-q2 * g.getX() - q3 * g.getY() - q4 * g.getZ()) * (0.5f * deltat);
+		q2 = pa + (q1 * g.getX() + pb * g.getZ() - pc * g.getY()) * (0.5f * deltat);
+		q3 = pb + (q1 * g.getY() - pa * g.getZ() + pc * g.getX()) * (0.5f * deltat);
+		q4 = pc + (q1 * g.getZ() + pa * g.getY() - pb * g.getX()) * (0.5f * deltat);
 
 		// Normalise quaternion
 		norm = (float) Math.sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
