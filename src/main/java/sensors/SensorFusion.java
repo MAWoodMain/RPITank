@@ -5,8 +5,12 @@ import sensors.dataTypes.Quaternion;
 
 public class SensorFusion {
 
-	final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
-	final Quaternion q = new Quaternion(1,0,0,0);  // vector to hold quaternion
+	private final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
+	private final Quaternion q = new Quaternion(1,0,0,0);  // vector to hold quaternion
+	private float yaw = 0;
+	private float pitch = 0;
+	private float roll = 0;
+	
 
 	// global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
 	private static final float GYRO_MEASUREMENT_ERROR = (float)Math.PI * (40.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
@@ -62,6 +66,72 @@ public class SensorFusion {
 	// but is much less computationally intensive---it can be performed on a 3.3
 	// V Pro Mini operating at 8 MHz!
 
+	public float[] geteInt() {
+		return eInt;
+	}
+
+	public Quaternion getQ() {
+		return q;
+	}
+
+	public float getYaw() {
+		return yaw;
+	}
+
+	public float getPitch() {
+		return pitch;
+	}
+
+	public float getRoll() {
+		return roll;
+	}
+
+	public static float getGyroMeasurementError() {
+		return GYRO_MEASUREMENT_ERROR;
+	}
+
+	public static float getGyroMeasurementDrift() {
+		return GYRO_MEASUREMENT_DRIFT;
+	}
+
+	public static float getBeta() {
+		return BETA;
+	}
+
+	public static float getZeta() {
+		return ZETA;
+	}
+
+	public static float getKp() {
+		return KP;
+	}
+
+	public static float getKi() {
+		return KI;
+	}
+
+	public void updateYawPitchRoll()
+	{
+		  // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
+		  // In this coordinate system, the positive z-axis is down toward Earth. 
+		  // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
+		  // Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
+		  // Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
+		  // These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
+		  // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
+		  // applied in the correct order which for this configuration is yaw, pitch, and then roll.
+		  // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
+		    yaw   = (float)Math.atan2(2.0f * (q.b * q.c + q.a * q.d), q.a * q.a + q.b * q.b - q.c * q.c - q.d * q.d);   
+		    pitch = -(float)Math.asin(2.0f * (q.b * q.d - q.a * q.c));
+		    roll  = (float)Math.atan2(2.0f * (q.a * q.b + q.c * q.d), q.a * q.a - q.b * q.b - q.c * q.c + q.d * q.d);
+		    pitch *= 180.0f / (float)Math.PI;
+		    yaw   *= 180.0f / (float)Math.PI; 
+		    //yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+		    yaw   -= -44f/60f; // Declination at Letchworth England is minus O degrees and 44 Seconds on 2016-07-11
+		    roll  *= 180.0f / (float)Math.PI;
+
+	}
+	
 	void MadgwickQuaternionUpdate(Data3D acc, Data3D grav, Data3D mag, float deltat) //delta t in seconds
 
 	{
