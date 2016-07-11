@@ -8,8 +8,8 @@ import javafx.geometry.Point3D;
  */
 public interface Gyroscope
 {
-    Data3D<Float> getLatestRotationalAcceleration();
-    Data3D<Float> getRotationalAcceleration(int i);
+    Data3D getLatestRotationalAcceleration();
+    Data3D getRotationalAcceleration(int i);
     int getReadingCount();
     float getMaxRotationalAcceleration();
     float getMinRotationalAcceleration();

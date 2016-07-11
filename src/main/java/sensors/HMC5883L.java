@@ -30,7 +30,7 @@ public class HMC5883L implements Magnetometer, Runnable
     private I2CBus bus;
     private I2CDevice hcm5883l;
 
-    private CircularArrayRing<Data3D<Float>> data;
+    private CircularArrayRing<Data3D> data;
 
 
 
@@ -79,7 +79,7 @@ public class HMC5883L implements Magnetometer, Runnable
     public float getHeading()
     {
         double heading = 0f;
-        Data3D<Float> data = this.getLatestGaussianData();
+        Data3D data = this.getLatestGaussianData();
         float xOut = data.getX();
         float yOut = data.getY();
         float zOut = data.getZ();
@@ -103,7 +103,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public Data3D<Float> getLatestGaussianData()
+    public Data3D getLatestGaussianData()
     {
         return data.get(0);
     }
@@ -113,7 +113,7 @@ public class HMC5883L implements Magnetometer, Runnable
     {
         try
         {
-            data.add(new Data3D<Float>(
+            data.add(new Data3D(
                     readWord_2C(HMC5883L_X_ADR) * SCALE,
                     readWord_2C(HMC5883L_Y_ADR) * SCALE,
                     readWord_2C(HMC5883L_Z_ADR) * SCALE));
@@ -140,7 +140,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public Data3D<Float> getGaussianData(int i)
+    public Data3D getGaussianData(int i)
     {
         return data.get(i);
     }
