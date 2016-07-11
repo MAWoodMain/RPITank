@@ -6,9 +6,9 @@ package sensors;
  */
 public class Data3D<T> {
 
-    public final T x;
-    public final T y;
-    public final T z;
+    private T x;
+    private T y;
+    private T z;
 
     public Data3D(T x, T y, T z) {
         this.x = x;
@@ -27,4 +27,16 @@ public class Data3D<T> {
     public T getZ() {
         return z;
     }
+
+	public void setX(T x) {
+		this.x = x;
+	}
+
+	public void setY(T y) {
+		this.y = y;
+	}
+
+	public void setZ(T z) {
+		this.z = z;
+	}
 }
