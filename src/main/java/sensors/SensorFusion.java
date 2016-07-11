@@ -5,8 +5,8 @@ import sensors.dataTypes.Quaternion;
 
 public class SensorFusion {
 
-	static float[] eInt = new float[3];
-	Quaternion q;
+	final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
+	final Quaternion q = new Quaternion(1,0,0,0);  // vector to hold quaternion
 
 	// global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
 	private static final float GYRO_MEASUREMENT_ERROR = (float)Math.PI * (40.0f / 180.0f);   // gyroscope measurement error in rads/s (start at 40 deg/s)
@@ -24,25 +24,31 @@ public class SensorFusion {
 	private static final float KP = 2.0f * 5.0f; // these are the free parameters in the Mahony filter and fusion scheme, KP for proportional feedback, KI for integral
 	private static final float KI = 0.0f;
 
+    // With these settings the filter is updating at a ~145 Hz rate using the Madgwick scheme and 
+    // >200 Hz using the Mahony scheme even though the display refreshes at only 2 Hz.
+    // The filter update rate is determined mostly by the mathematical steps in the respective algorithms, 
+    // the processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
+    // an ODR of 10 Hz for the magnetometer produce the above rates, maximum magnetometer ODR of 100 Hz produces
+    // filter update rates of 36 - 145 and ~38 Hz for the Madgwick and Mahony schemes, respectively. 
+    // This is presumably because the magnetometer read takes longer than the gyro or accelerometer reads.
+    // This filter update rate should be fast enough to maintain accurate platform orientation for 
+    // stabilization control of a fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
+    // produced by the on-board Digital Motion Processor of Invensense's MPU6050 6 DoF and MPU9150 9DoF sensors.
+    // The 3.3 V 8 MHz Pro Mini is doing pretty well!
+	
+	// Examples of calling the filters, READ BEFORE USING!!		!!!
+	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
+	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
+	// We have to make some allowance for this orientationmismatch in feeding the output to the quaternion filter.
+	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like
+	// in the LSM9DS0 sensor. This rotation can be modified to allow any convenient orientation convention.
+	// This is ok by aircraft orientation standards!  
+	// Pass gyro rate as rad/s
+	//  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
+	//  MahonyQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f, my, mx, mz);
 
-	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of
-	// the magnetometer;
-	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of
-	// accelerometer and g.getY()ro!
-	// We have to make some allowance for this orientationmismatch in feeding
-	// the output to the quaternion filter.
-	// For the MPU-9250, we have chosen a magnetic rotation that keeps the
-	// sensor forward along the x-axis just like
-	// in the LSM9DS0 sensor. This rotation can be modified to allow any
-	// convenient orientation convention.
-	// This is ok by aircraft orientation standards!
-	// Pass g.getY()ro rate as rad/s
-
-	// MadgwickQuaternionUpdate(ax, ay, az, g.getX()*PI/180.0f, g.getY()*PI/180.0f,
-	// g.getZ()*PI/180.0f,m.getY(), m.getX(),m.getZ());
-	// MahonyQuaternionUpdate(ax, ay, az, g.getX()*PI/180.0f, g.getY()*PI/180.0f,
-	// g.getZ()*PI/180.0f,m.getY(), m.getX(),m.getZ());
-
+	
+	
 	// Implementation of Sebastian Madgwick's
 	// "...efficient orientation filter for... inertial/magnetic sensor arrays"
 	// (see http://www.x-io.co.uk/category/open-source/ for examples and more
@@ -162,13 +168,8 @@ public class SensorFusion {
 		q2 += qDot2 * deltat;
 		q3 += qDot3 * deltat;
 		q4 += qDot4 * deltat;
-		norm = (float) Math.sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4); // normalise
-																			// quaternion
-		norm = 1.0f / norm;
-		q.a = q1 * norm;
-		q.b = q2 * norm;
-		q.c = q3 * norm;
-		q.d = q4 * norm;
+		q.setAll(q1, q2, q3, q4);
+		q.normalize();// Normalise quaternion
 
 	}
 
@@ -249,13 +250,7 @@ public class SensorFusion {
 		q3 = pb + (q1 * grav.getY() - pa * grav.getZ() + pc * grav.getX()) * (0.5f * deltat);
 		q4 = pc + (q1 * grav.getZ() + pa * grav.getY() - pb * grav.getX()) * (0.5f * deltat);
 
-		// Normalise quaternion
-		norm = (float) Math.sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
-		norm = 1.0f / norm;
-		q.a = q1 * norm;
-		q.b = q2 * norm;
-		q.c = q3 * norm;
-		q.d = q4 * norm;
-
+		q.setAll(q1, q2, q3, q4);
+		q.normalize();// Normalise quaternion
 	}
 }
