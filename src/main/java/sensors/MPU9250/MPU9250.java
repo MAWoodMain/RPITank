@@ -60,7 +60,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         initMPU9250();
         initAK8963();
         calibrateMag();
-        Thread.sleep(1000);
         updateMagData();
 
 
@@ -84,8 +83,52 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         }
     }
 
-    private void calibrateMag()
+    private void calibrateMag() throws InterruptedException, IOException
     {
+        int sample_count = 0;
+        int mag_bias[] = {0, 0, 0}, mag_scale[] = {0, 0, 0};
+        int mag_max[] = {0x8000, 0x8000, 0x8000}, mag_min[] = {0x7FFF, 0x7FFF, 0x7FFF}, mag_temp[] = {0, 0, 0};
+
+        System.out.println("Mag Calibration: Wave device in a figure eight until done!");
+        Thread.sleep(4000);
+
+        // shoot for ~fifteen seconds of mag data
+        if(M_MODE.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
+        if(M_MODE.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
+        for(int ii = 0; ii < sample_count; ii++) {
+            updateMagData();  // Read the mag data
+            mag_temp[0] = (int)(this.getLatestGaussianData().getX() / magScale.getRes());
+            mag_temp[1] = (int)(this.getLatestGaussianData().getY() / magScale.getRes());
+            mag_temp[2] = (int)(this.getLatestGaussianData().getZ() / magScale.getRes());
+            for (int jj = 0; jj < 3; jj++) {
+                if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
+                if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
+            }
+            if(M_MODE.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+            if(M_MODE.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
+        }
+        // Get hard iron correction
+        mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
+        mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
+        mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
+
+        magBias[0] = (float) mag_bias[0]*magScale.getRes()*magCalibration[0];  // save mag biases in G for main program
+        magBias[1] = (float) mag_bias[1]*magScale.getRes()*magCalibration[1];
+        magBias[2] = (float) mag_bias[2]*magScale.getRes()*magCalibration[2];
+
+        // Get soft iron correction estimate
+        mag_scale[0]  = (mag_max[0] - mag_min[0])/2;  // get average x axis max chord length in counts
+        mag_scale[1]  = (mag_max[1] - mag_min[1])/2;  // get average y axis max chord length in counts
+        mag_scale[2]  = (mag_max[2] - mag_min[2])/2;  // get average z axis max chord length in counts
+
+        float avg_rad = mag_scale[0] + mag_scale[1] + mag_scale[2];
+        avg_rad /= 3.0;
+
+        magScaling[0] = avg_rad/((float)mag_scale[0]);
+        magScaling[1] = avg_rad/((float)mag_scale[1]);
+        magScaling[2] = avg_rad/((float)mag_scale[2]);
+
+        System.out.println("Mag Calibration done!");
     }
 
     private void initAK8963() throws InterruptedException, IOException
