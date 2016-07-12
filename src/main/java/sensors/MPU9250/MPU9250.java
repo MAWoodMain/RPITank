@@ -48,7 +48,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
     public MPU9250() throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
-    	this(10);
+    	this(10,10);
     }
     
     public MPU9250(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
