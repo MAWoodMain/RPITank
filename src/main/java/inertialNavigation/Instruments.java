@@ -10,9 +10,9 @@ import sensors.dataTypes.TimestampedData3D;
 public class Instruments {
 	
 	//Fused  data from several sensors
-	private static float yaw = 0;
-	private static float pitch = 0;
-	private static float roll = 0;
+	private static float yaw = 0; //Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
+	private static float pitch = 0; //Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
+	private static float roll = 0; //Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
 	
 	//Data computed from integrating sensor information
 	private static float speed = 0;
@@ -21,8 +21,8 @@ public class Instruments {
 	
 	//data from individual sensors
 	private static TimestampedData3D magnetometer = new TimestampedData3D(0,0,0);
-	private static TimestampedData3D accellerometer = new TimestampedData3D(0,0,0);
-	private static TimestampedData3D compass = new TimestampedData3D(0,0,0);
+	private static TimestampedData3D accelerometer = new TimestampedData3D(0,0,0);
+	private static TimestampedData3D gyroscope = new TimestampedData3D(0,0,0);
 	
 	// getters
 	
@@ -53,12 +53,12 @@ public class Instruments {
 		return magnetometer;
 	}
 
-	public static TimestampedData3D getAccellerometer() {
-		return accellerometer;
+	public static TimestampedData3D getAccelerometer() {
+		return accelerometer;
 	}
 
-	public static TimestampedData3D getCompass() {
-		return compass;
+	public static TimestampedData3D getGyroscope() {
+		return gyroscope;
 	}
 
 	//Setters
@@ -79,28 +79,33 @@ public class Instruments {
 		Instruments.magnetometer = magnetometer;
 	}
 
-	public static void setAccellerometer(TimestampedData3D accellerometer) {
-		Instruments.accellerometer = accellerometer;
+	public static void setAccelerometer(TimestampedData3D accellerometer) {
+		Instruments.accelerometer = accellerometer;
 	}
 
-	public static void setCompass(TimestampedData3D compass) {
-		Instruments.compass = compass;
+	public static void setGyroscope(TimestampedData3D gyroscope) {
+		Instruments.gyroscope = gyroscope;
 	}
 
 	/**
-	 * @param q
+	 * Update output acceleration variables Yaw, Pitch and Roll based on fused sensor data
+	 * <p>
+	 * these are Tait-Bryan angles, commonly used in aircraft orientation.
+	 * In this coordinate system, the positive z-axis is down toward Earth.
+	 * Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination,
+	 * looking down on the sensor positive yaw is counterclockwise.
+	 * Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
+	 * Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
+	 * <p>
+	 * These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
+	 * Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
+	 * applied in the correct order which for this configuration is yaw, pitch, and then roll.
+	 * For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
+	 * 
+	 * @param q a quaternion containing the fused input data - see https://en.wikipedia.org/wiki/Quaternion
 	 */
 	public static void updateYawPitchRoll(Quaternion q)
 	{
-		  // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
-		  // In this coordinate system, the positive z-axis is down toward Earth. 
-		  // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
-		  // Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
-		  // Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
-		  // These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
-		  // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
-		  // applied in the correct order which for this configuration is yaw, pitch, and then roll.
-		  // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
 		    yaw   = (float)Math.atan2(2.0f * (q.b * q.c + q.a * q.d), q.a * q.a + q.b * q.b - q.c * q.c - q.d * q.d);   
 		    pitch = -(float)Math.asin(2.0f * (q.b * q.d - q.a * q.c));
 		    roll  = (float)Math.atan2(2.0f * (q.a * q.b + q.c * q.d), q.a * q.a - q.b * q.b - q.c * q.c + q.d * q.d);
