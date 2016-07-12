@@ -1,4 +1,4 @@
-package sensors;
+package navigation;
 
 import sensors.dataTypes.Data3D;
 import sensors.dataTypes.Quaternion;
@@ -110,7 +110,7 @@ public class SensorFusion {
 		return KI;
 	}
 
-	private void updateYawPitchRoll()
+	private void updateYawPitchRoll(Quaternion q)
 	{
 		  // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
 		  // In this coordinate system, the positive z-axis is down toward Earth. 
@@ -240,7 +240,7 @@ public class SensorFusion {
 		q4 += qDot4 * deltat;
 		q.setAll(q1, q2, q3, q4);
 		q.normalize();// Normalise quaternion
-		updateYawPitchRoll();
+		updateYawPitchRoll(q);
 
 	}
 
@@ -323,6 +323,6 @@ public class SensorFusion {
 
 		q.setAll(q1, q2, q3, q4);
 		q.normalize();// Normalise quaternion
-		updateYawPitchRoll();
+		updateYawPitchRoll(q);
 	}
 }
