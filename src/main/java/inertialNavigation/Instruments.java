@@ -1,17 +1,30 @@
 package inertialNavigation;
 
-import sensors.dataTypes.Data3D;
 import sensors.dataTypes.Quaternion;
+import sensors.dataTypes.TimestampedData3D;
 
+/**
+ * @author GJWood
+ *
+ */
 public class Instruments {
 	
+	//Fused  data from several sensors
 	private static float yaw = 0;
 	private static float pitch = 0;
 	private static float roll = 0;
 	
+	//Data computed from integrating sensor information
 	private static float speed = 0;
-	private static Data3D heading = new Data3D(0,0,0);
-	private static Data3D position = new Data3D(0,0,0);
+	private static TimestampedData3D heading = new TimestampedData3D(0,0,0);
+	private static TimestampedData3D position = new TimestampedData3D(0,0,0);
+	
+	//data from individual sensors
+	private static TimestampedData3D magnetometer = new TimestampedData3D(0,0,0);
+	private static TimestampedData3D accellerometer = new TimestampedData3D(0,0,0);
+	private static TimestampedData3D compass = new TimestampedData3D(0,0,0);
+	
+	// getters
 	
 	public static float getYaw() {
 		return yaw;
@@ -28,14 +41,55 @@ public class Instruments {
 		return speed;
 	}
 
-	public static Data3D getHeading() {
+	public static TimestampedData3D getHeading() {
 		return heading;
 	}
 
-	public static Data3D getPosition() {
+	public static TimestampedData3D getPosition() {
 		return position;
 	}
 
+	public static TimestampedData3D getMagnetometer() {
+		return magnetometer;
+	}
+
+	public static TimestampedData3D getAccellerometer() {
+		return accellerometer;
+	}
+
+	public static TimestampedData3D getCompass() {
+		return compass;
+	}
+
+	//Setters
+	
+	public static void setPitch(float pitch) {
+		Instruments.pitch = pitch;
+	}
+
+	public static void setHeading(TimestampedData3D heading) {
+		Instruments.heading = heading;
+	}
+
+	public static void setPosition(TimestampedData3D position) {
+		Instruments.position = position;
+	}
+
+	public static void setMagnetometer(TimestampedData3D magnetometer) {
+		Instruments.magnetometer = magnetometer;
+	}
+
+	public static void setAccellerometer(TimestampedData3D accellerometer) {
+		Instruments.accellerometer = accellerometer;
+	}
+
+	public static void setCompass(TimestampedData3D compass) {
+		Instruments.compass = compass;
+	}
+
+	/**
+	 * @param q
+	 */
 	public static void updateYawPitchRoll(Quaternion q)
 	{
 		  // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
