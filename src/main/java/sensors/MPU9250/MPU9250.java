@@ -454,13 +454,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     e.printStackTrace();
                 }
             }
-            try
-            {
-                Thread.sleep(100);
-            } catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
         }
     }
 
