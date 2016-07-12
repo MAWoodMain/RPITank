@@ -13,4 +13,5 @@ public interface Accelerometer
     int getAccelerometerReadingCount();
     float getMaxAcceleration();
     float getMinAcceleration();
+    void updateAccelerometerData() throws Exception;
 }

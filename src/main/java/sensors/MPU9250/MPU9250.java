@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
+import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
@@ -24,9 +25,14 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
+    private int lastRawMagX;
+    private int lastRawMagY;
+    private int lastRawMagZ;
+
     private float[] magCalibration = new float[3];
     private float[] magBias = new float[3];
     private float[] magScaling = new float[3];
+    private float[] accelBias = new float[3];
 
     private CircularArrayRing<TimestampedData3D> accel;
     private CircularArrayRing<TimestampedData3D> gyro;
@@ -60,27 +66,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         initMPU9250();
         initAK8963();
         calibrateMag();
-        updateMagData();
 
 
         paused = false;
-    }
-
-    private void updateMagData() throws IOException
-    {
-        int newMagData = (ak8963.read(AK8963_ST1.getValue()) & 0x01);
-        if (newMagData == 0) return;
-        byte[] buffer = new byte[7];
-        ak8963.read(AK8963_ST1.getValue(), buffer,0,7);
-
-        byte c = buffer[6];
-        if((c & 0x08) == 0)
-        { // Check if magnetic sensor overflow set, if not then report data
-            mag.add(new TimestampedData3D(
-                    (float)((buffer[1] << 8) | buffer[0])*magScale.getRes(), // Turn the MSB and LSB into a signed 16-bit value
-                    (float)((buffer[3] << 8) | buffer[2])*magScale.getRes(),  // Data stored as little Endian
-                    (float)((buffer[5] << 8) | buffer[4])*magScale.getRes()));
-        }
     }
 
     private void calibrateMag() throws InterruptedException, IOException
@@ -96,10 +84,10 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         if(M_MODE.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
         if(M_MODE.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
-            updateMagData();  // Read the mag data
-            mag_temp[0] = (int)(this.getLatestGaussianData().getX() / magScale.getRes());
-            mag_temp[1] = (int)(this.getLatestGaussianData().getY() / magScale.getRes());
-            mag_temp[2] = (int)(this.getLatestGaussianData().getZ() / magScale.getRes());
+            updateMagnetometerData();  // Read the mag data
+            mag_temp[0] = lastRawMagX;
+            mag_temp[1] = lastRawMagY;
+            mag_temp[2] = lastRawMagZ;
             for (int jj = 0; jj < 3; jj++) {
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
@@ -258,16 +246,16 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         packetCount /= 12;
 
         buffer = new byte[12];
-        int[] accelBias = new int[]{0,0,0};
+        int[] accelBiasl = new int[]{0,0,0};
         int[] gyroBias = new int[]{0,0,0};
 
         for(int s = 0; s < packetCount; s++)
         {
             mpu9250.read(FIFO_R_W.getValue(),buffer,0,12); // read FIFO sample count
 
-            accelBias[0] += (buffer[0] << 8) | buffer[1];
-            accelBias[1] += (buffer[2] << 8) | buffer[3];
-            accelBias[2] += (buffer[4] << 8) | buffer[5];
+            accelBiasl[0] += (buffer[0] << 8) | buffer[1];
+            accelBiasl[1] += (buffer[2] << 8) | buffer[3];
+            accelBiasl[2] += (buffer[4] << 8) | buffer[5];
 
             gyroBias[0] += (buffer[6] << 8) | buffer[7];
             gyroBias[1] += (buffer[8] << 8) | buffer[9];
@@ -275,16 +263,16 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         }
 
 
-        accelBias[0] /= packetCount;
-        accelBias[1] /= packetCount;
-        accelBias[2] /= packetCount;
+        accelBiasl[0] /= packetCount;
+        accelBiasl[1] /= packetCount;
+        accelBiasl[2] /= packetCount;
 
         gyroBias[0] /= packetCount;
         gyroBias[1] /= packetCount;
         gyroBias[2] /= packetCount;
 
-        if(accelBias[2] > 0L) {accelBias[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
-        else {accelBias[2] += accelSensitivity;}
+        if(accelBiasl[2] > 0L) {accelBiasl[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
+        else {accelBiasl[2] += accelSensitivity;}
 
 
         // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
@@ -321,9 +309,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         }
 
         // Construct total accelerometer bias, including calculated average accelerometer bias from above
-        accelBiasReg[0] -= (accelBias[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-        accelBiasReg[1] -= (accelBias[1]/8);
-        accelBiasReg[2] -= (accelBias[2]/8);
+        accelBiasReg[0] -= (accelBiasl[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+        accelBiasReg[1] -= (accelBiasl[1]/8);
+        accelBiasReg[2] -= (accelBiasl[2]/8);
 
         buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF);
         buffer[1] = (byte)((accelBiasReg[0])      & 0xFF);
@@ -344,6 +332,12 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         mpu9250.write(YA_OFFSET_L.getValue(), buffer[3]);
         mpu9250.write(ZA_OFFSET_H.getValue(), buffer[4]);
         mpu9250.write(ZA_OFFSET_L.getValue(), buffer[5]);
+
+
+
+        accelBias[0] = (float)accelBiasl[0]/(float)accelSensitivity;
+        accelBias[1] = (float)accelBiasl[1]/(float)accelSensitivity;
+        accelBias[2] = (float)accelBiasl[2]/(float)accelSensitivity;
 
     }
 
@@ -438,13 +432,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public void updateData()
     {
 
-    }
-
-    private int getData(int address) throws IOException
-    {
-        byte high = (byte)mpu9250.read(address);
-        byte low = (byte)mpu9250.read(address + 1);
-        return (high<<8 | low); // construct 16 bit integer from two bytes
     }
 
     @Override
@@ -544,6 +531,14 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
+    public void updateThermometerData() throws Exception
+    {
+        byte rawData[] = new byte[2];  // x/y/z gyro register data stored here
+        mpu9250.read(TEMP_OUT_H.getValue(),rawData,0,2);  // Read the two raw data registers sequentially into data array
+        temp.add((float)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
+    }
+
+    @Override
     public float getHeading()
     {
         //TODO: derive heading from Gaussian data
@@ -563,6 +558,34 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
+    public void updateMagnetometerData() throws IOException
+    {
+        int newMagData = (ak8963.read(AK8963_ST1.getValue()) & 0x01);
+        if (newMagData == 0) return;
+        byte[] buffer = new byte[7];
+        ak8963.read(AK8963_ST1.getValue(), buffer,0,7);
+
+        byte c = buffer[6];
+        if((c & 0x08) == 0)
+        { // Check if magnetic sensor overflow set, if not then report data
+            lastRawMagX = (buffer[1] << 8) | buffer[0];
+            lastRawMagY = (buffer[3] << 8) | buffer[2];
+            lastRawMagZ = (buffer[5] << 8) | buffer[4];
+            float x=lastRawMagX,y=lastRawMagY,z=lastRawMagZ;
+
+            x *= magScale.getRes()*magCalibration[0];
+            y *= magScale.getRes()*magCalibration[1];
+            z *= magScale.getRes()*magCalibration[2];
+
+            x -= magBias[0];
+            y -= magBias[1];
+            z -= magBias[2];
+
+            mag.add(new TimestampedData3D(x,y,z));
+        }
+    }
+
+    @Override
     public float getMaxRotationalAcceleration()
     {
         return gyrScale.getMinMax();
@@ -575,6 +598,23 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
+    public void updateGyroscopeData() throws IOException
+    {
+        float x,y,z;
+        byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
+        mpu9250.read(GYRO_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+        y = (rawData[2] << 8) | rawData[3] ;
+        z = (rawData[4] << 8) | rawData[5] ;
+
+        x *= gyrScale.getRes(); // transform from raw data to degrees/s
+        y *= gyrScale.getRes(); // transform from raw data to degrees/s
+        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+
+        gyro.add(new TimestampedData3D(x,y,z));
+    }
+
+    @Override
     public float getMaxAcceleration()
     {
         return accScale.getMinMax();
@@ -584,5 +624,26 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public float getMinAcceleration()
     {
         return accScale.getMinMax();
+    }
+
+    @Override
+    public void updateAccelerometerData() throws IOException
+    {
+        float x,y,z;
+        byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
+        mpu9250.read(ACCEL_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
+        y = (rawData[2] << 8) | rawData[3] ;
+        z = (rawData[4] << 8) | rawData[5] ;
+
+        x *= gyrScale.getRes(); // transform from raw data to degrees/s
+        y *= gyrScale.getRes(); // transform from raw data to degrees/s
+        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+
+        x -= accelBias[0];
+        y -= accelBias[1];
+        z -= accelBias[2];
+
+        gyro.add(new TimestampedData3D(x,y,z));
     }
 }

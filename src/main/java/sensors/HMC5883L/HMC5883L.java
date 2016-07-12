@@ -103,13 +103,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public TimestampedData3D getLatestGaussianData()
-    {
-        return data.get(0);
-    }
-
-
-    private void updateData()
+    public void updateMagnetometerData() throws Exception
     {
         try
         {
@@ -124,15 +118,22 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
+    public TimestampedData3D getLatestGaussianData()
+    {
+        return data.get(0);
+    }
+
+
+    @Override
     public void run()
     {
         while(!Thread.interrupted())
         {
-            updateData();
             try
             {
+                updateMagnetometerData();
                 Thread.sleep(100);
-            } catch (InterruptedException e)
+            } catch (Exception e)
             {
                 e.printStackTrace();
             }

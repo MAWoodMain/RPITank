@@ -13,4 +13,5 @@ public interface Gyroscope
     int getGyroscopeReadingCount();
     float getMaxRotationalAcceleration();
     float getMinRotationalAcceleration();
+    void updateGyroscopeData() throws Exception;
 }

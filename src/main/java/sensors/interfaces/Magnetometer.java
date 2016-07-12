@@ -14,4 +14,5 @@ public interface Magnetometer
     int getMagnetometerReadingCount();
     float getMaxGauss();
     float getMinGauss();
+    void updateMagnetometerData() throws Exception;
 }
