@@ -29,6 +29,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private int lastRawMagY;
     private int lastRawMagZ;
 
+    private final int sampleRate;
+
     private float[] magCalibration = new float[3];
     private float[] magBias = new float[3];
     private float[] magScaling = new float[3];
@@ -51,15 +53,16 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     
     public MPU9250(int sampleRate) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
-        paused = true;
-        accel = new CircularArrayRing<>();
-        gyro = new CircularArrayRing<>();
-        mag = new CircularArrayRing<>();
-        temp = new CircularArrayRing<>();
+        this.sampleRate = sampleRate;
+        this.paused = true;
+        this.accel = new CircularArrayRing<>();
+        this.gyro = new CircularArrayRing<>();
+        this.mag = new CircularArrayRing<>();
+        this.temp = new CircularArrayRing<>();
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
-        mpu9250 = bus.getDevice(0x68);
-        ak8963 = bus.getDevice(0x0C);
+        this.mpu9250 = bus.getDevice(0x68);
+        this.ak8963 = bus.getDevice(0x0C);
 
         selfTest();
         calibrateGyroAcc();
@@ -68,7 +71,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         calibrateMag();
 
 
-        paused = false;
+        this.paused = false;
     }
 
     private void calibrateMag() throws InterruptedException, IOException
@@ -429,17 +432,28 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5] + "%");
     }
 
-    public void updateData()
-    {
-
-    }
 
     @Override
     public void run()
     {
+        long lastTime;
+        final long waitTime = 1000000000l/sampleRate;
         while(!Thread.interrupted())
         {
-            if(!paused) updateData();
+            if(!paused)
+            {
+                try
+                {
+                    lastTime = System.nanoTime();
+                    updateMagnetometerData();
+                    updateAccelerometerData();
+                    updateGyroscopeData();
+                    while(System.nanoTime() - lastTime < waitTime);
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
             try
             {
                 Thread.sleep(100);
