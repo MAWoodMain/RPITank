@@ -156,12 +156,12 @@ enum Registers
 
 enum MagScale
 {
-    MFS_14BIT(0x02,10.*4912./8190.),
-    MFS_16BIT(0x12,10.*4912./32760.0);
+    MFS_14BIT(0x02,10f*4912f/8190f),
+    MFS_16BIT(0x12,10f*4912f/32760f);
 
     private final int value;
-    private final double res;
-    MagScale(int value, double res)
+    private final float res;
+    MagScale(int value, float res)
     {
         this.value = value;
         this.res = res;
@@ -170,7 +170,7 @@ enum MagScale
     {
         return (byte)value;
     }
-    public double getRes()
+    public float getRes()
     {
         return res;
     }

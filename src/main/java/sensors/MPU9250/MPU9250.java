@@ -4,6 +4,7 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
+import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
@@ -25,6 +26,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final AccScale accScale = AccScale.AFS_4G;
 
     private float[] magCalibration = new float[3];
+    private float[] magBias = new float[3];
+    private float[] magScaling = new float[3];
 
     private CircularArrayRing<TimestampedData3D> accel;
     private CircularArrayRing<TimestampedData3D> gyro;
@@ -52,11 +55,32 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         calibrateGyroAcc();
         initMPU9250();
         initAK8963();
-        //calibrateMag();
+        calibrateMag();
 
 
 
         paused = false;
+    }
+
+    private void updateMagData() throws IOException
+    {
+        int newMagData = (ak8963.read(AK8963_ST1.getValue()) & 0x01);
+        if (newMagData == 0) return;
+        byte[] buffer = new byte[7];
+        ak8963.read(AK8963_ST1.getValue(), buffer,0,7);
+
+        byte c = buffer[6];
+        if((c & 0x08) == 0)
+        { // Check if magnetic sensor overflow set, if not then report data
+            mag.add(new TimestampedData3D(
+                    (float)((buffer[1] << 8) | buffer[0])*magScale.getRes(), // Turn the MSB and LSB into a signed 16-bit value
+                    (float)((buffer[3] << 8) | buffer[2])*magScale.getRes(),  // Data stored as little Endian
+                    (float)((buffer[5] << 8) | buffer[4])*magScale.getRes()));
+        }
+    }
+
+    private void calibrateMag()
+    {
     }
 
     private void initAK8963() throws InterruptedException, IOException
