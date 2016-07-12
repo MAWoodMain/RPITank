@@ -149,7 +149,7 @@ public class HMC5883L implements Magnetometer, Runnable
     }
 
     @Override
-    public int getReadingCount()
+    public int getMagnetometerReadingCount()
     {
         return 0;
     }

@@ -328,9 +328,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
-    public int getReadingCount()
+    public int getAccelerometerReadingCount()
     {
-        return 0;
+        return gyro.size();
     }
 
     @Override
@@ -346,6 +346,11 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     }
 
     @Override
+    public int getGyroscopeReadingCount() {
+        return gyro.size();
+    }
+
+    @Override
     public TimestampedData3D getLatestGaussianData()
     {
         return mag.get(0);
@@ -355,6 +360,11 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public TimestampedData3D getGaussianData(int i)
     {
         return mag.get(i);
+    }
+
+    @Override
+    public int getMagnetometerReadingCount() {
+        return mag.size();
     }
 
 
@@ -368,6 +378,11 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public float getTemperature(int i)
     {
         return temp.get(i);
+    }
+
+    @Override
+    public int getThermometerReadingCount() {
+        return temp.size();
     }
 
     @Override

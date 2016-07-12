@@ -10,7 +10,7 @@ public interface Accelerometer
 {
     TimestampedData3D getLatestAcceleration();
     TimestampedData3D getAcceleration(int i);
-    int getReadingCount();
+    int getAccelerometerReadingCount();
     float getMaxAcceleration();
     float getMinAcceleration();
 }

@@ -11,7 +11,7 @@ public interface Magnetometer
     float getHeading();
     TimestampedData3D getLatestGaussianData();
     TimestampedData3D getGaussianData(int i);
-    int getReadingCount();
+    int getMagnetometerReadingCount();
     float getMaxGauss();
     float getMinGauss();
 }

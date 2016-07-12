@@ -10,7 +10,7 @@ public interface Gyroscope
 {
     TimestampedData3D getLatestRotationalAcceleration();
     TimestampedData3D getRotationalAcceleration(int i);
-    int getReadingCount();
+    int getGyroscopeReadingCount();
     float getMaxRotationalAcceleration();
     float getMinRotationalAcceleration();
 }

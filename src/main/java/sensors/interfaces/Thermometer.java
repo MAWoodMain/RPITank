@@ -8,4 +8,5 @@ public interface Thermometer
 {
     float getLatestTemperature();
     float getTemperature(int i);
+    int getThermometerReadingCount();
 }
