@@ -277,7 +277,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[5] + "%");
     }
 
-    private void updateData()
+    public void updateData()
     {
 
     }
