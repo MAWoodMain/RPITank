@@ -25,24 +25,30 @@ public class Navigate implements Runnable{
 	public static void main(String[] args)throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException {
 		// TODO Auto-generated method stub
         
-        String format = "%+04.3f";
 
 	}
     @Override
     public void run()
     {
+        String format = "%+04.3f";
         while(!Thread.interrupted())
         {
             if(!paused) mpu9250.updateData();
             try
             {    
-            	//Data3D mag = mpu9250.getLatestGaussianData();
-                //Data3D acc = mpu9250.getLatestAcceleration();
-                //Data3D gyr = mpu9250.getLatestRotationalAcceleration();
-                //System.out.print(  "acc: " + String.format(format,acc.getX()) + ", " + String.format(format,acc.getY()) + ", " + String.format(format,acc.getZ()) + " ");
-                //System.out.print(  "gyr: " + String.format(format,gyr.getX()) + ", " + String.format(format,gyr.getY()) + ", " + String.format(format,gyr.getZ()) + " ");
-                //System.out.println("mag: " + String.format(format,mag.getX()) + ", " + String.format(format,mag.getY()) + ", " + String.format(format,mag.getZ()) + " ");
-                //System.out.println(mpu9250.getHeading());
+            	Instruments.setMagnetometer( mpu9250.getLatestGaussianData());
+                Instruments.setAccelerometer(mpu9250.getLatestAcceleration());
+                Instruments.setGyroscope(mpu9250.getLatestRotationalAcceleration());
+                System.out.print(  "acc: " + String.format(format,Instruments.getAccelerometer().getX()) + ", " +
+                		String.format(format,Instruments.getAccelerometer().getY()) + ", " + 
+                		String.format(format,Instruments.getAccelerometer().getZ()) + " ");
+                System.out.print(  "gyr: " + String.format(format,Instruments.getGyroscope().getX()) + ", " +
+                		String.format(format,Instruments.getGyroscope().getY()) + ", " +
+                		String.format(format,Instruments.getGyroscope().getZ()) + " ");
+                System.out.println("mag: " + String.format(format,Instruments.getMagnetometer().getX()) + ", " + 
+                		String.format(format,Instruments.getMagnetometer().getY()) + ", " + 
+                		String.format(format,Instruments.getMagnetometer().getZ()) + " ");
+                System.out.println(mpu9250.getHeading());
 
                 Thread.sleep(100);
             } catch (InterruptedException e)
