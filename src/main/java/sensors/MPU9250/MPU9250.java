@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
-import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
@@ -54,14 +53,15 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         mpu9250 = bus.getDevice(0x68);
-        ak8963 = bus.getDevice(0x76);
+        ak8963 = bus.getDevice(0x0C);
 
         selfTest();
         calibrateGyroAcc();
         initMPU9250();
         initAK8963();
         calibrateMag();
-
+        Thread.sleep(1000);
+        updateMagData();
 
 
         paused = false;
