@@ -64,6 +64,10 @@ public class Instruments {
 	public static TimestampedData3D getGyroscope() {
 		return gyroscope;
 	}
+	
+	public static TimestampedData3D getAngles(){
+		return new TimestampedData3D(yaw,pitch,roll);
+	}
 
 	//Setters
 	

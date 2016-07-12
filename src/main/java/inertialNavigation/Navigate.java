@@ -51,7 +51,6 @@ public class Navigate implements Runnable, SensorUpdateListener{
     @Override
     public void run()
     {
-        String format = "%+04.3f";
         while(!Thread.interrupted())
         {
             if(dataReady) 
@@ -62,15 +61,11 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 Instruments.setAccelerometer(acc.getLatestAcceleration());
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
                 Instruments.setHeading(mag.getHeading());
-                System.out.print(  "acc: " + String.format(format,Instruments.getAccelerometer().getX()) + ", " +
-                		String.format(format,Instruments.getAccelerometer().getY()) + ", " + 
-                		String.format(format,Instruments.getAccelerometer().getZ()) + " ");
-                System.out.print(  "gyr: " + String.format(format,Instruments.getGyroscope().getX()) + ", " +
-                		String.format(format,Instruments.getGyroscope().getY()) + ", " +
-                		String.format(format,Instruments.getGyroscope().getZ()) + " ");
-                System.out.println("mag: " + String.format(format,Instruments.getMagnetometer().getX()) + ", " + 
-                		String.format(format,Instruments.getMagnetometer().getY()) + ", " + 
-                		String.format(format,Instruments.getMagnetometer().getZ()) + " ");
+                SensorFusion.MadgwickQuaternionUpdate(Instruments.getAccelerometer(),Instruments.getGyroscope(),Instruments.getMagnetometer(),(float)(DELTA_T/1000000000));
+                System.out.print(  "acc: " + Instruments.getAccelerometer().toString());
+                System.out.print(  "gyr: " + Instruments.getGyroscope().toString());
+                System.out.println("mag: " + Instruments.getMagnetometer().toString());
+                System.out.println("Yaw,Pirch & Roll: " + Instruments.getAngles().toString());
                 System.out.println(mag.getHeading());
 
                 Thread.sleep(1);

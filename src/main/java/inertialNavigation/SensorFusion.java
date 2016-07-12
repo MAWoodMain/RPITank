@@ -2,11 +2,12 @@ package inertialNavigation;
 
 import sensors.dataTypes.Data3D;
 import sensors.dataTypes.Quaternion;
+import sensors.dataTypes.TimestampedData3D;
 
 public class SensorFusion {
 
-	private final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
-	private final Quaternion q = new Quaternion(1,0,0,0);  // vector to hold quaternion
+	private static final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
+	private static final Quaternion q = new Quaternion(1,0,0,0);  // vector to hold quaternion
 	
 
 	// global constants for 9 DoF fusion and AHRS (Attitude and Heading Reference System)
@@ -40,7 +41,7 @@ public class SensorFusion {
 	// Examples of calling the filters, READ BEFORE USING!!		!!!
 	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
 	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
-	// We have to make some allowance for this orientationmismatch in feeding the output to the quaternion filter.
+	// We have to make some allowance for this orientation mismatch in feeding the output to the quaternion filter.
 	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like
 	// in the LSM9DS0 sensor. This rotation can be modified to allow any convenient orientation convention.
 	// This is ok by aircraft orientation standards!  
@@ -97,7 +98,7 @@ public class SensorFusion {
 	}
 
 	
-	void MadgwickQuaternionUpdate(Data3D acc, Data3D grav, Data3D mag, float deltat) //delta t in seconds
+	public static void MadgwickQuaternionUpdate(TimestampedData3D acc, TimestampedData3D grav, TimestampedData3D mag, float deltat) //delta t in seconds
 
 	{
 		float q1 = q.a, q2 = q.b, q3 = q.c, q4 = q.d; // short name local
@@ -212,7 +213,7 @@ public class SensorFusion {
 	// Similar to Madgwick scheme but uses proportional and integral filtering
 	// on the error between estimated reference vectors and
 	// measured ones.
-	void MahonyQuaternionUpdate(Data3D acc, Data3D grav, Data3D mag, float deltat) //delta t in seconds
+	public static void MahonyQuaternionUpdate(Data3D acc, Data3D grav, Data3D mag, float deltat) //delta t in seconds
 
 	{
 		float q1 = q.a, q2 = q.b, q3 = q.c, q4 = q.d; // short name local
