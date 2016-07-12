@@ -6,12 +6,10 @@ import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
 import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
-import sensors.interfaces.Accelerometer;
-import sensors.interfaces.Gyroscope;
-import sensors.interfaces.Magnetometer;
-import sensors.interfaces.Thermometer;
+import sensors.interfaces.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import static sensors.MPU9250.Registers.*;
 
@@ -41,6 +39,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private CircularArrayRing<TimestampedData3D> mag;
     private CircularArrayRing<Float> temp;
 
+    ArrayList<SensorUpdateListener> listeners;
+
     private boolean paused;
 
     private final I2CDevice mpu9250;
@@ -63,6 +63,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         this.mpu9250 = bus.getDevice(0x68);
         this.ak8963 = bus.getDevice(0x0C);
+
+        listeners = new ArrayList<>();
 
         selfTest();
         calibrateGyroAcc();
@@ -448,6 +450,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     updateMagnetometerData();
                     updateAccelerometerData();
                     updateGyroscopeData();
+
+                    for(SensorUpdateListener listener:listeners) listener.dataUpdated();
+
                     while(System.nanoTime() - lastTime < waitTime);
                 } catch (IOException e)
                 {
