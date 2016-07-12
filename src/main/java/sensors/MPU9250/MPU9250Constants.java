@@ -139,7 +139,9 @@ enum Registers
     YA_OFFSET_H      (0x7A),
     YA_OFFSET_L      (0x7B),
     ZA_OFFSET_H      (0x7D),
-    ZA_OFFSET_L      (0x7E);
+    ZA_OFFSET_L      (0x7E),
+
+    M_MODE           (0x06); // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 
     private int value;
     Registers(int value)

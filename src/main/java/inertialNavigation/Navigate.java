@@ -32,11 +32,10 @@ public class Navigate implements Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	public static void main(String[] args)throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException {
-		// TODO Auto-generated method stub
-        
-
+    }
+	public static void main(String[] args)throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException
+	{
+        new Navigate();
 	}
     @Override
     public void run()

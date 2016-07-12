@@ -24,6 +24,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
 
+    private float[] magCalibration = new float[3];
+
     private CircularArrayRing<TimestampedData3D> accel;
     private CircularArrayRing<TimestampedData3D> gyro;
     private CircularArrayRing<TimestampedData3D> mag;
@@ -32,8 +34,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     private boolean paused;
 
     private final I2CDevice mpu9250;
+    private final I2CDevice ak8963;
 
-    public MPU9250(int address) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
+    public MPU9250() throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
         paused = true;
         accel = new CircularArrayRing<>();
@@ -42,17 +45,100 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         temp = new CircularArrayRing<>();
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
-        mpu9250 = bus.getDevice(address);
+        mpu9250 = bus.getDevice(0x68);
+        ak8963 = bus.getDevice(0x76);
 
         selfTest();
         calibrateGyroAcc();
-        //initMPU9250();
-        //initAK8963();
+        initMPU9250();
+        initAK8963();
         //calibrateMag();
 
 
 
         paused = false;
+    }
+
+    private void initAK8963() throws InterruptedException, IOException
+    {
+        // First extract the factory calibration for each magnetometer axis
+        byte rawData[] = new byte[3];  // x/y/z gyro calibration data stored here
+        ak8963.write(AK8963_CNTL.getValue(),(byte) 0x00); // Power down magnetometer
+        Thread.sleep(10);
+        ak8963.write(AK8963_CNTL.getValue(), (byte)0x0F); // Enter Fuse ROM access mode
+        Thread.sleep(10);
+        ak8963.read(AK8963_ASAX.getValue(), rawData,0,3);  // Read the x-, y-, and z-axis calibration values
+        magCalibration[0] =  (float)(rawData[0] - 128)/256f + 1f;   // Return x-axis sensitivity adjustment values, etc.
+        magCalibration[1] =  (float)(rawData[1] - 128)/256f + 1f;
+        magCalibration[2] =  (float)(rawData[2] - 128)/256f + 1f;
+        ak8963.write(AK8963_CNTL.getValue(), (byte)0x00); // Power down magnetometer
+        Thread.sleep(10);
+        // Configure the magnetometer for continuous read and highest resolution
+        // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
+        // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
+        ak8963.write(AK8963_CNTL.getValue(), (byte)(magScale.getValue() << 4 | M_MODE.getValue())); // Set magnetometer data resolution and sample ODR
+        Thread.sleep(10);
+    }
+
+    private void initMPU9250() throws IOException, InterruptedException
+    {
+        // wake up device
+        // Clear sleep mode bit (6), enable all sensors
+        mpu9250.write(PWR_MGMT_1.getValue(), (byte)0x00);
+        Thread.sleep(100); // Wait for all registers to reset
+
+        // get stable time source
+        mpu9250.write(PWR_MGMT_1.getValue(), (byte)0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
+        Thread.sleep(200);
+
+        // Configure Gyro and Thermometer
+        // Disable FSYNC and set thermometer and gyro bandwidth to 41 and 42 Hz, respectively;
+        // minimum delay time for this setting is 5.9 ms, which means sensor fusion update rates cannot
+        // be higher than 1 / 0.0059 = 170 Hz
+        // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
+        // With the MPU9250, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
+        mpu9250.write(CONFIG.getValue(), (byte)0x03);
+
+        // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
+        mpu9250.write(SMPLRT_DIV.getValue(), (byte)0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
+        // determined inset in CONFIG above
+
+        // Set gyroscope full scale range
+        // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
+        byte c = (byte) mpu9250.read(GYRO_CONFIG.getValue()); // get current GYRO_CONFIG register value
+        // c = c & ~0xE0; // Clear self-test bits [7:5]
+        c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
+        c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
+        c = (byte)(c | gyrScale.getValue() << 3); // Set full scale range for the gyro
+        // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
+        mpu9250.write(GYRO_CONFIG.getValue(), c ); // Write new GYRO_CONFIG value to register
+
+        // Set accelerometer full-scale range configuration
+        c = (byte) mpu9250.read(ACCEL_CONFIG.getValue()); // get current ACCEL_CONFIG register value
+        // c = c & ~0xE0; // Clear self-test bits [7:5]
+        c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
+        c = (byte)(c | accScale.getValue() << 3); // Set full scale range for the accelerometer
+        mpu9250.write(ACCEL_CONFIG.getValue(), c); // Write new ACCEL_CONFIG register value
+
+        // Set accelerometer sample rate configuration
+        // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
+        // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
+        c = (byte) mpu9250.read(ACCEL_CONFIG2.getValue()); // get current ACCEL_CONFIG2 register value
+        c = (byte)(c & ~0x0F); // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
+        c = (byte)(c | 0x03);  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+        mpu9250.write(ACCEL_CONFIG2.getValue(), c); // Write new ACCEL_CONFIG2 register value
+
+        // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates,
+        // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
+
+        // Configure Interrupts and Bypass Enable
+        // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
+        // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips
+        // can join the I2C bus and all can be controlled by the Arduino as master
+        //   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);
+        mpu9250.write(INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
+        mpu9250.write(INT_ENABLE.getValue(), (byte)0x01);  // Enable data ready (bit 0) interrupt
+        Thread.sleep(100);
     }
 
     private void calibrateGyroAcc() throws IOException, InterruptedException
