@@ -16,7 +16,10 @@ public class Instruments {
 	
 	//Data computed from integrating sensor information
 	private static float speed = 0;
-	private static TimestampedData3D heading = new TimestampedData3D(0,0,0);
+	private static float heading = 0;
+	private static float attitude = 0;
+	private static float bank = 0;
+	
 	private static TimestampedData3D position = new TimestampedData3D(0,0,0);
 	
 	//data from individual sensors
@@ -41,7 +44,7 @@ public class Instruments {
 		return speed;
 	}
 
-	public static TimestampedData3D getHeading() {
+	public static float getHeading() {
 		return heading;
 	}
 
@@ -63,11 +66,27 @@ public class Instruments {
 
 	//Setters
 	
+	public static float getAttitude() {
+		return attitude;
+	}
+
+	public static float getBank() {
+		return bank;
+	}
+
+	public static void setBank(float bank) {
+		Instruments.bank = bank;
+	}
+
+	public static void setAttitude(float attitude) {
+		Instruments.attitude = attitude;
+	}
+
 	public static void setPitch(float pitch) {
 		Instruments.pitch = pitch;
 	}
 
-	public static void setHeading(TimestampedData3D heading) {
+	public static void setHeading(float heading) {
 		Instruments.heading = heading;
 	}
 
@@ -109,11 +128,11 @@ public class Instruments {
 		    yaw   = (float)Math.atan2(2.0f * (q.b * q.c + q.a * q.d), q.a * q.a + q.b * q.b - q.c * q.c - q.d * q.d);   
 		    pitch = -(float)Math.asin(2.0f * (q.b * q.d - q.a * q.c));
 		    roll  = (float)Math.atan2(2.0f * (q.a * q.b + q.c * q.d), q.a * q.a - q.b * q.b - q.c * q.c + q.d * q.d);
-		    pitch *= 180.0f / (float)Math.PI;
-		    yaw   *= 180.0f / (float)Math.PI; 
+		    pitch *= 180.0f / (float)Math.PI; //radians to degrees
+		    yaw   *= 180.0f / (float)Math.PI; //radians to degrees
 		    //yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
 		    yaw   -= -44f/60f; // Declination at Letchworth England is minus O degrees and 44 Seconds on 2016-07-11
-		    roll  *= 180.0f / (float)Math.PI;
+		    roll  *= 180.0f / (float)Math.PI; //radians to degrees
 	}
 
 }
