@@ -13,7 +13,7 @@ public class Main
 {
     public static void main(String[] args) throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException
     {
-        MPU9250 mpu9250 = new MPU9250(104);
+        MPU9250 mpu9250 = new MPU9250();
         String format = "%+04.3f";
 
         for(int x=0; x<1000; x++)

@@ -12,17 +12,25 @@ import sensors.interfaces.Magnetometer;
 
 public class Navigate implements Runnable{
 	
+	private static final int SAMPLE_RATE = 100; //sample at 100 Hertz
+	private static final long DELTA_T = 1000000000L/SAMPLE_RATE; // average time difference in between readings in nano seconds
 	private Boolean paused;
 	
 	private Accelerometer acc;
 	private Magnetometer mag;
 	private Gyroscope gyr;
 	
+	public static int getSampleRate() {
+		return SAMPLE_RATE;
+	}
+	public static long getDeltaT() {
+		return DELTA_T;
+	}
 	public Navigate()
 	{
 		paused  = false;
 		try {
-			MPU9250 mpu9250  = new MPU9250(104);
+			MPU9250 mpu9250  = new MPU9250(SAMPLE_RATE); //sample at 100 Hertz
 			new Thread(mpu9250).start();
 			acc = mpu9250;
 			mag = mpu9250;

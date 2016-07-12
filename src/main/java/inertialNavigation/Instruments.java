@@ -14,8 +14,9 @@ public class Instruments {
 	private static float pitch = 0; //Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
 	private static float roll = 0; //Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
 	
-	//Data computed from integrating sensor information
 	private static float speed = 0;
+	
+	//Data computed from integrating sensor information
 	private static float heading = 0;
 	private static float attitude = 0;
 	private static float bank = 0;
