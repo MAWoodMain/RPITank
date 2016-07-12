@@ -17,13 +17,7 @@ public class Navigate implements Runnable{
 		paused  = false;
 		try {
 			mpu9250  = new MPU9250(104);
-		} catch (UnsupportedBusNumberException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
+		} catch (UnsupportedBusNumberException | IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

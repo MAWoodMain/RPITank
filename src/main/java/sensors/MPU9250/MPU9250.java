@@ -84,7 +84,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         mpu9250.write(ACCEL_CONFIG.getValue(),(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
 
         int gyrosensitivity = 131;     // = 131 LSB/degrees/sec
-        int accelsensitivity = 16384;  // = 16384 LSB/g
+        int accelSensitivity = 16384;  // = 16384 LSB/g
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
         mpu9250.write(USER_CTRL.getValue(),(byte) 0x40);   // Enable FIFO
@@ -125,8 +125,8 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         gyroBias[1] /= packetCount;
         gyroBias[2] /= packetCount;
 
-        if(accelBias[2] > 0L) {accelBias[2] -= accelsensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
-        else {accelBias[2] += accelsensitivity;}
+        if(accelBias[2] > 0L) {accelBias[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
+        else {accelBias[2] += accelSensitivity;}
 
 
         // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
@@ -272,9 +272,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1] + "%");
         System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2] + "%");
         System.out.println("Gyroscope accuracy:(% away from factory values)");
-        System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[3] + "%");
-        System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[4] + "%");
-        System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[5] + "%");
+        System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
+        System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
+        System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5] + "%");
     }
 
     public void updateData()

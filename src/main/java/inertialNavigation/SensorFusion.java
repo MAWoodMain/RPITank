@@ -218,7 +218,6 @@ public class SensorFusion {
 		float q1 = q.a, q2 = q.b, q3 = q.c, q4 = q.d; // short name local
 														// variable for
 														// readability
-		float norm;
 		float hx, hy, bx, bz;
 		float vx, vy, vz, wx, wy, wz;
 		float ex, ey, ez;

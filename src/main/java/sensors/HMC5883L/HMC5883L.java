@@ -66,7 +66,7 @@ public class HMC5883L implements Magnetometer, Runnable
     // Complement to 2
     private short readWord_2C(int reg) throws IOException
     {
-        short w = 0;
+        short w;
 
         byte high = (byte)(hcm5883l.read(reg) & 0xFF);
         byte low  = (byte)(hcm5883l.read(reg + 1) & 0xFF);
@@ -81,13 +81,10 @@ public class HMC5883L implements Magnetometer, Runnable
 
     public float getHeading()
     {
-        double heading = 0f;
+        double heading;
         Data3D data = this.getLatestGaussianData();
-        float xOut = data.getX();
-        float yOut = data.getY();
-        float zOut = data.getZ();
 
-        heading = Math.atan2(yOut, xOut);
+        heading = Math.atan2(data.getY(), data.getX());
         if (heading < 0)
             heading += (2 * Math.PI);
         return (float) Math.toDegrees(heading);

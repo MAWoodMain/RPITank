@@ -67,8 +67,8 @@ public class TankDriveAssembly implements DriveAssembly
             right.stop();
         } else
         {
-            float leftCoefficient = 1;
-            float rightCoefficient = 1;
+            float leftCoefficient;
+            float rightCoefficient;
             float adjustedDirection = this.getDirection();
 
             if(this.getDirection() > 90 && this.getDirection() < 270)
