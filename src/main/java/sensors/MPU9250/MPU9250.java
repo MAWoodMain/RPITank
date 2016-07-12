@@ -656,7 +656,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         y -= accelBias[1];
         z -= accelBias[2];
 
-        gyro.add(new TimestampedData3D(x,y,z));
+        accel.add(new TimestampedData3D(x,y,z));
     }
     
     public void registerInterest(SensorUpdateListener listener)

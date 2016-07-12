@@ -39,6 +39,7 @@ public class Data3D {
 	public void setZ(float z) {
 		this.z = z;
 	}
+
 	public void normalize(){
 		float norm;
 		// Normalise accelerometer measurement
@@ -50,5 +51,13 @@ public class Data3D {
 		y *= norm;
 		z *= norm;
 		
+	}
+
+	public String toString()
+	{
+		String format = "%+04.3f";
+		return   "x: " + String.format(format,x) +
+				" y: " + String.format(format,y) +
+				" z: " + String.format(format,z);
 	}
 }
