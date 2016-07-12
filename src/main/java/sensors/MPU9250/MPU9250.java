@@ -51,14 +51,14 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     	this(10);
     }
     
-    public MPU9250(int sampleRate) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
+    public MPU9250(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
         this.sampleRate = sampleRate;
         this.paused = true;
-        this.accel = new CircularArrayRing<>();
-        this.gyro = new CircularArrayRing<>();
-        this.mag = new CircularArrayRing<>();
-        this.temp = new CircularArrayRing<>();
+        this.accel = new CircularArrayRing<>(sampleSize);
+        this.gyro = new CircularArrayRing<>(sampleSize);
+        this.mag = new CircularArrayRing<>(sampleSize);
+        this.temp = new CircularArrayRing<>(sampleSize);
         // get device
         I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
         this.mpu9250 = bus.getDevice(0x68);
