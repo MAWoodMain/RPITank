@@ -63,8 +63,7 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 Instruments.setAccelerometer(acc.getLatestAcceleration());
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
                 Instruments.setHeading(mag.getHeading());
-                System.out.println("Mag Heading - " + mag.getHeading());
-
+                
             	// Examples of calling the filters, READ BEFORE USING!!		!!!
             	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
             	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
@@ -83,14 +82,12 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 ajustedMag.setX(Instruments.getMagnetometer().getY()); //swap X and Y, Z stays the same
                 ajustedMag.setY(Instruments.getMagnetometer().getX());
 
-                //update quaternion and instruments based on that (yaw, pitch & roll) 
                 SensorFusion.MadgwickQuaternionUpdate(Instruments.getAccelerometer(),ajustedGyr,ajustedMag,(float)(DELTA_T/TimestampedData3D.NANOS_PER_SEC));
-                
                 System.out.print(  "acc: " + Instruments.getAccelerometer().toString());
                 System.out.print(  "gyr: " + Instruments.getGyroscope().toString());
                 System.out.println("mag: " + Instruments.getMagnetometer().toString());
                 System.out.println("Yaw,Pirch & Roll: " + Instruments.getAngles().toString());
-                System.out.println("H -"+ Instruments.getHeading() +" A -"+ Instruments.getAttitude() + " B -"+ Instruments.getBank() );
+                System.out.println(mag.getHeading());
 
                 Thread.sleep(1);
             } catch (InterruptedException e)

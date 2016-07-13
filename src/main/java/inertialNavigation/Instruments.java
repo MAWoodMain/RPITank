@@ -17,9 +17,9 @@ public class Instruments {
 	private static float speed = 0;
 	
 	//Data computed from integrating sensor information
-	private static float heading = 0; // equivalent to yaw
-	private static float[] attitude = {0,0}; // shows equivalent to pitch & roll
-	private static float bank = 0; //equivalent to roll
+	private static float heading = 0;
+	private static float attitude = 0;
+	private static float bank = 0;
 	
 	private static TimestampedData3D position = new TimestampedData3D(0,0,0);
 	
@@ -71,7 +71,7 @@ public class Instruments {
 
 	//Setters
 	
-	public static float[] getAttitude() {
+	public static float getAttitude() {
 		return attitude;
 	}
 
@@ -83,7 +83,7 @@ public class Instruments {
 		Instruments.bank = bank;
 	}
 
-	public static void setAttitude(float[] attitude) {
+	public static void setAttitude(float attitude) {
 		Instruments.attitude = attitude;
 	}
 

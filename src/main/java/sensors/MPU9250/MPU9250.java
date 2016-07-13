@@ -9,6 +9,7 @@ import sensors.interfaces.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static sensors.MPU9250.Registers.*;
 
@@ -64,6 +65,9 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         this.ak8963 = bus.getDevice(0x0C);
 
         listeners = new ArrayList<>();
+        Thread.sleep(2000);
+
+        System.out.println(mpu9250.read(WHO_AM_I_MPU9250.getValue()));
 
         selfTest();
         calibrateGyroAcc();
@@ -345,88 +349,134 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
     }
 
+    /**
+     * Accelerometer and gyroscope self test; check calibration wrt factory settings
+     * calculates & prints percent deviation from factory trim values, +/- 14 or less deviation is a pass
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private void selfTest() throws IOException, InterruptedException
     {
-        // Set gyro sample rate to 1 kHz
-        mpu9250.write(SMPLRT_DIV.getValue(),(byte)0x00);
-        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
-        mpu9250.write(CONFIG.getValue(),(byte)0x02);
+
+        byte FS = 0;
+        int bytesRead =0;
+
+        mpu9250.write(SMPLRT_DIV.getValue(),(byte)0x00); // Set gyro sample rate to 1 kHz
+        Thread.sleep(2);
+        mpu9250.write(CONFIG.getValue(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+        Thread.sleep(2);
         // Set full scale range for the gyro to 250 dps
-        mpu9250.write(GYRO_CONFIG.getValue(),GyrScale.GFS_250DPS.getValue());
+        mpu9250.write(GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getValue());
+        Thread.sleep(2);
         // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         mpu9250.write(ACCEL_CONFIG2.getValue(),(byte)0x02);
+        Thread.sleep(2);
         // Set full scale range for the accelerometer to 2 g
-        mpu9250.write(ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
+        mpu9250.write(ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccScale.AFS_2G.getValue());
+        Thread.sleep(2);
 
         final int TEST_LENGTH = 200;
         byte[] buffer = new byte[]{0,0,0,0,0,0};
-        int ax,ay,az,gx,gy,gz;
-        ax=ay=az=gx=gy=gz=0;
+
+        short[] aAvg = new short[3];
+        short[] gAvg = new short[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
-            ax += ((buffer[0] << 8) | buffer[1]);
-            ay += ((buffer[2] << 8) | buffer[3]);
-            az += ((buffer[4] << 8) | buffer[5]);
+            bytesRead = mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
+            System.out.print("ACCEL_XOUT_H read - "+ bytesRead+":");
+            System.out.println(" "+bytesToHex(buffer));
+            aAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            aAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            aAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            Thread.sleep(2);
 
-            mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
-            gx += ((buffer[0] << 8) | buffer[1]);
-            gy += ((buffer[2] << 8) | buffer[3]);
-            gz += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            bytesRead = mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
+            System.out.print("GYRO_XOUT_H  read - "+ bytesRead+":");
+            System.out.println(" "+bytesToHex(buffer));
+            gAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            gAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            gAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            Thread.sleep(2);
+            buffer = new byte[]{0,0,0,0,0,0};
         }
 
-        int[] aAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
-        int[] gAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+        for(int i = 0; i<3; i++)
+        {
+            aAvg[i] /= TEST_LENGTH;
+            gAvg[i] /= TEST_LENGTH;
+        }
 
         mpu9250.write(ACCEL_CONFIG.getValue(), (byte)0xE0);
+        Thread.sleep(2);
         mpu9250.write(GYRO_CONFIG.getValue(), (byte)0xE0);
-        Thread.sleep(25);
+        Thread.sleep(2);
 
-        ax=ay=az=gx=gy=gz=0;
+        int[] aSTAvg = new int[3];
+        int[] gSTAvg = new int[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
             mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
-            gx += ((buffer[0] << 8) | buffer[1]);
-            gy += ((buffer[2] << 8) | buffer[3]);
-            gz += ((buffer[4] << 8) | buffer[5]);
+            aSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            aSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            aSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            Thread.sleep(2);
 
             mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
-            ax += ((buffer[0] << 8) | buffer[1]);
-            ay += ((buffer[2] << 8) | buffer[3]);
-            az += ((buffer[4] << 8) | buffer[5]);
+            gSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            gSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            gSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            Thread.sleep(2);
         }
 
-        int[] aSTAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
-        int[] gSTAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+        for(int i = 0; i<3; i++)
+        {
+            aSTAvg[i] /= TEST_LENGTH;
+            gSTAvg[i] /= TEST_LENGTH;
+        }
 
+        Thread.sleep(2);
         mpu9250.write(GYRO_CONFIG.getValue(),GyrScale.GFS_250DPS.getValue());
+        Thread.sleep(2);
         mpu9250.write(ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
         Thread.sleep(25);
 
         int[] selfTest = new int[6];
 
         selfTest[0] = mpu9250.read(SELF_TEST_X_ACCEL.getValue());
+        Thread.sleep(2);
         selfTest[1] = mpu9250.read(SELF_TEST_Y_ACCEL.getValue());
+        Thread.sleep(2);
         selfTest[2] = mpu9250.read(SELF_TEST_Z_ACCEL.getValue());
+        Thread.sleep(2);
         selfTest[3] = mpu9250.read(SELF_TEST_X_GYRO.getValue());
+        Thread.sleep(2);
         selfTest[4] = mpu9250.read(SELF_TEST_Y_GYRO.getValue());
+        Thread.sleep(2);
         selfTest[5] = mpu9250.read(SELF_TEST_Z_GYRO.getValue());
+        Thread.sleep(2);
 
         float[] factoryTrim = new float[6];
 
-        factoryTrim[0] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[0] - 1.0);
-        factoryTrim[1] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[1] - 1.0);
-        factoryTrim[2] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[2] - 1.0);
-        factoryTrim[3] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[3] - 1.0);
-        factoryTrim[4] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
-        factoryTrim[5] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
+        factoryTrim[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[0] - 1f);
+        factoryTrim[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[1] - 1f);
+        factoryTrim[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[2] - 1f);
+        factoryTrim[3] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[3] - 1f);
+        factoryTrim[4] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[4] - 1f);
+        factoryTrim[5] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[5] - 1f);
+
+        float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0];
+        float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1];
+        float aZAccuracy = 100*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2];
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
-        System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0] + "%");
-        System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1] + "%");
-        System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2] + "%");
+        System.out.println("x: " + aXAccuracy + "%");
+        System.out.println("y: " + aYAccuracy + "%");
+        System.out.println("z: " + aZAccuracy + "%");
         System.out.println("Gyroscope accuracy:(% away from factory values)");
         System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
         System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
@@ -450,13 +500,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     updateAccelerometerData();
                     updateGyroscopeData();
                     updateThermometerData();
-                    Thread.sleep(100);
-                    short x = -110;
-                    short y = 100;
-                    short z = 100;
-                    //mpu9250.write(XA_OFFSET_H.getValue(), intToByteArray(x));
-                    //mpu9250.write(YA_OFFSET_H.getValue(), intToByteArray(y));
-                    //mpu9250.write(ZA_OFFSET_H.getValue(), intToByteArray(z));
                     Thread.sleep(100);
 
 
@@ -685,5 +728,17 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public void registerInterest(SensorUpdateListener listener)
     {
     	listeners.add(listener);
+    }
+
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 3];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 3] = hexArray[v >>> 4];
+            hexChars[j * 3 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3 + 2] = ' ';
+        }
+        return new String(hexChars);
     }
 }
