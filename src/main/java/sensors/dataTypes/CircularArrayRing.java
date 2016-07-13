@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 public class CircularArrayRing<T> extends AbstractCollection<T>
 {
 
-    private Object[] data;
+    private final Object[] data;
     private int size;
     private int head;
 

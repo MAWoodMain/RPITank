@@ -8,12 +8,12 @@ import motors.Motor;
  * RPITank
  * Created by MAWood on 06/07/2016.
  */
-public class DriveAssemblyTest
+class DriveAssemblyTest
 {
-    public static final Pin LEFT_MOTOR_A = RaspiPin.GPIO_02;
-    public static final Pin LEFT_MOTOR_B = RaspiPin.GPIO_03;
-    public static final Pin RIGHT_MOTOR_A = RaspiPin.GPIO_00;
-    public static final Pin RIGHT_MOTOR_B = RaspiPin.GPIO_01;
+    private static final Pin LEFT_MOTOR_A = RaspiPin.GPIO_02;
+    private static final Pin LEFT_MOTOR_B = RaspiPin.GPIO_03;
+    private static final Pin RIGHT_MOTOR_A = RaspiPin.GPIO_00;
+    private static final Pin RIGHT_MOTOR_B = RaspiPin.GPIO_01;
 
 
     public static void main(String[] args) throws InterruptedException
@@ -35,7 +35,7 @@ public class DriveAssemblyTest
         }
     }
 
-    public static void cycleSpeed(DriveAssembly assembly, int delay) throws InterruptedException
+    private static void cycleSpeed(DriveAssembly assembly, int delay) throws InterruptedException
     {
         for(int i = 10; i<100; i++)
         {

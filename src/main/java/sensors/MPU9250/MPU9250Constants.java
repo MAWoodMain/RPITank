@@ -143,7 +143,7 @@ enum Registers
 
     M_MODE           (0x06); // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 
-    private int value;
+    private final int value;
     Registers(int value)
     {
         this.value = value;

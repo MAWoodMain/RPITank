@@ -15,9 +15,9 @@ public class StepperMotor
         backwards
     }
 
-    private byte[] stepSequence;
-    private PinState[] states;
-    private GpioPinDigitalOutput[] pins;
+    private final byte[] stepSequence;
+    private final PinState[] states;
+    private final GpioPinDigitalOutput[] pins;
     private final int STEPS_PER_ROTATION;
     private final int STEP_DELAY_NANOS = 700000;
     private int phase;
@@ -35,7 +35,7 @@ public class StepperMotor
         this.stepSequence[3] = (byte) 0b1001;
     }
 
-    private void step(Direction direction) throws InterruptedException
+    private void step(Direction direction)
     {
         if(direction == Direction.forward)
         {

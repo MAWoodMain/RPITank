@@ -2,7 +2,6 @@
 
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.MPU9250.MPU9250;
-import sensors.dataTypes.Data3D;
 
 import java.io.IOException;
 
@@ -10,7 +9,7 @@ import java.io.IOException;
  * RPITank
  * Created by MAWood on 01/07/2016.
  */
-public class Main
+class Main
 {
     public static void main(String[] args) throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException
     {

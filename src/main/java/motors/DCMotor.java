@@ -12,8 +12,8 @@ public class DCMotor implements Motor
 {
     private float speed;
 
-    private GpioPinDigitalOutput pinA;
-    private GpioPinDigitalOutput pinB;
+    private final GpioPinDigitalOutput pinA;
+    private final GpioPinDigitalOutput pinB;
 
 
     public DCMotor(GpioPinDigitalOutput pinA, GpioPinDigitalOutput pinB)

@@ -33,7 +33,7 @@ public class HMC5883L implements Magnetometer, Runnable
     private I2CBus bus;
     private I2CDevice hcm5883l;
 
-    private CircularArrayRing<TimestampedData3D> data;
+    private final CircularArrayRing<TimestampedData3D> data;
 
 
 

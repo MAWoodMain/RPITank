@@ -28,15 +28,15 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
     private final int sampleRate;
 
-    private float[] magCalibration = new float[3];
-    private float[] magBias = new float[3];
-    private float[] magScaling = new float[3];
-    private float[] accelBias = new float[3];
+    private final float[] magCalibration = new float[3];
+    private final float[] magBias = new float[3];
+    private final float[] magScaling = new float[3]; // TODO investigate why unused
+    private final float[] accelBias = new float[3];
 
-    private CircularArrayRing<TimestampedData3D> accel;
-    private CircularArrayRing<TimestampedData3D> gyro;
-    private CircularArrayRing<TimestampedData3D> mag;
-    private CircularArrayRing<Float> temp;
+    private final CircularArrayRing<TimestampedData3D> accel;
+    private final CircularArrayRing<TimestampedData3D> gyro;
+    private final CircularArrayRing<TimestampedData3D> mag;
+    private final CircularArrayRing<Float> temp;
 
     ArrayList<SensorUpdateListener> listeners;
 
@@ -416,12 +416,12 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
         float[] factoryTrim = new float[6];
 
-        factoryTrim[0] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[0] - 1.0);
-        factoryTrim[1] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[1] - 1.0);
-        factoryTrim[2] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[2] - 1.0);
-        factoryTrim[3] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[3] - 1.0);
-        factoryTrim[4] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
-        factoryTrim[5] = (float)(2620/(1<<0))*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
+        factoryTrim[0] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[0] - 1.0);
+        factoryTrim[1] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[1] - 1.0);
+        factoryTrim[2] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[2] - 1.0);
+        factoryTrim[3] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[3] - 1.0);
+        factoryTrim[4] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
+        factoryTrim[5] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
         System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0] + "%");
@@ -438,7 +438,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     public void run()
     {
         long lastTime;
-        final long waitTime = 1000000000l/sampleRate;
+        final long waitTime = 1000000000L /sampleRate;
         while(!Thread.interrupted())
         {
             if(!paused)
@@ -454,9 +454,6 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     for(SensorUpdateListener listener:listeners) listener.dataUpdated();
 
                     while(System.nanoTime() - lastTime < waitTime);
-                } catch (IOException e)
-                {
-                    e.printStackTrace();
                 } catch (Exception e)
                 {
                     e.printStackTrace();
