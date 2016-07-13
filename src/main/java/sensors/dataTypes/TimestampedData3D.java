@@ -24,7 +24,13 @@ public class TimestampedData3D extends Data3D
     {
         this(data.getX(),data.getY(),data.getZ());
     }
-    
+
+    public TimestampedData3D(TimestampedData3D data)
+    {
+        super(data.getX(),data.getY(),data.getZ());
+        this.nanoTime = data.nanoTime;
+    }
+   
 	public String toString()
 	{
 		String format = "%+04.4f";
