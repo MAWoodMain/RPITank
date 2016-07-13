@@ -1,6 +1,8 @@
 package sensors.MPU9250;
 
 import com.pi4j.io.i2c.I2CFactory;
+import jdk.dio.DeviceManager;
+import jdk.dio.i2cbus.I2CDevice;
 import jdk.dio.i2cbus.I2CDeviceConfig;
 import sensors.dataTypes.CircularArrayRing;
 import sensors.dataTypes.TimestampedData3D;
@@ -54,10 +56,6 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
     private boolean paused;
 
-    public MPU9250_Oracle() throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
-    {
-    	this(10,10);
-    }
 
     public MPU9250_Oracle(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
@@ -694,13 +692,36 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         write(device,register,(byte)value);
     }
 
-    private void write(Device device, Registers register, byte value)
+    private void write(Device deviceType, Registers register, byte value)
     {
-        switch (device)
-        {
-            case mpu9250:
+        I2CDevice device = null;
+        try {
+            switch (deviceType)
+            {
+                case mpu9250:
+                    device = DeviceManager.open(mpu9250);
+                    break;
+                case ak8963:
+                    device = DeviceManager.open(ak8963);
+                    break;
+                default:
+                    return;
 
-                break;
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            buffer.put(value);
+            device.write(register.getValue(),1,buffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Close device
+            if (device != null) {
+                try {
+                    device.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
 
         }
     }
@@ -710,18 +731,75 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         return read(device,register.getValue());
     }
 
-    private byte read(Device device,int address)
+    private byte read(Device deviceType,int address)
     {
-        return (byte) 0x00;
+        I2CDevice device = null;
+        try {
+            switch (deviceType)
+            {
+                case mpu9250:
+                    device = DeviceManager.open(mpu9250);
+                    break;
+                case ak8963:
+                    device = DeviceManager.open(ak8963);
+                    break;
+                default:
+                    return 0;
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            device.read(address,buffer);
+            return buffer.get();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Close device
+            if (device != null) {
+                try {
+                    device.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+        }
+        return 0;
     }
 
     private byte[] read(Device device, Registers register, int length)
     {
         return read(device,register.getValue(),length);
     }
-    private byte[] read(Device device, int address, int length)
+    private byte[] read(Device deviceType, int address, int length)
     {
+        I2CDevice device = null;
+        try {
+            switch (deviceType)
+            {
+                case mpu9250:
+                    device = DeviceManager.open(mpu9250);
+                    break;
+                case ak8963:
+                    device = DeviceManager.open(ak8963);
+                    break;
+                default:
+                    return new byte[0];
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(length);
+            device.read(address,buffer);
+            return buffer.array();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Close device
+            if (device != null) {
+                try {
+                    device.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
 
+        }
         return new byte[0];
     }
 
