@@ -39,4 +39,18 @@ public class TimestampedData3D extends Data3D
 				" y: " + String.format(format,this.getY()) +
 				" z: " + String.format(format,this.getZ());
 	}
+	
+	public static TimestampedData3D integrate(TimestampedData3D sampleT, TimestampedData3D sampleTm1 )
+	{
+	   float deltaT;
+	   TimestampedData3D integral = new TimestampedData3D(sampleT); // preserve timestamp in result
+	   deltaT = (float)(sampleT.nanoTime-sampleTm1.nanoTime)/(float)TimestampedData3D.NANOS_PER_SEC; // time difference between samples in seconds
+	   
+	   integral.setX((float)(sampleT.getX()+sampleTm1.getX())/2f*deltaT);  //Trapezoidal area, average height X deltaT
+	   integral.setY((float)(sampleT.getY()+sampleTm1.getY())/2f*deltaT);
+	   integral.setZ((float)(sampleT.getZ()+sampleTm1.getZ())/2f*deltaT);
+	   
+	   return integral;
+	}
+
 }
