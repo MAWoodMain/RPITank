@@ -69,7 +69,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         calibrateGyroAcc();
         initMPU9250();
         initAK8963();
-        calibrateMag();
+        //calibrateMag();
 
 
         this.paused = false;
@@ -330,13 +330,13 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         // Apparently this is not working for the acceleration biases in the MPU-9250
         // Are we handling the temperature correction bit properly?
         // Push accelerometer biases to hardware registers
-        mpu9250.write(XA_OFFSET_H.getValue(), buffer[0]);
+        /*mpu9250.write(XA_OFFSET_H.getValue(), buffer[0]);
         mpu9250.write(XA_OFFSET_L.getValue(), buffer[1]);
         mpu9250.write(YA_OFFSET_H.getValue(), buffer[2]);
         mpu9250.write(YA_OFFSET_L.getValue(), buffer[3]);
         mpu9250.write(ZA_OFFSET_H.getValue(), buffer[4]);
         mpu9250.write(ZA_OFFSET_L.getValue(), buffer[5]);
-
+        */
 
 
         accelBias[0] = (float)accelBiasl[0]/(float)accelSensitivity;
@@ -450,6 +450,15 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     updateAccelerometerData();
                     updateGyroscopeData();
                     updateThermometerData();
+                    Thread.sleep(100);
+                    short x = -110;
+                    short y = 100;
+                    short z = 100;
+                    //mpu9250.write(XA_OFFSET_H.getValue(), intToByteArray(x));
+                    //mpu9250.write(YA_OFFSET_H.getValue(), intToByteArray(y));
+                    //mpu9250.write(ZA_OFFSET_H.getValue(), intToByteArray(z));
+                    Thread.sleep(100);
+
 
                     for(SensorUpdateListener listener:listeners) listener.dataUpdated();
 
@@ -460,6 +469,12 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                 }
             }
         }
+    }
+
+    public static final byte[] intToByteArray(short value) {
+        return new byte[] {
+                (byte)(value >>> 8),
+                (byte)value};
     }
 
     public void pause()
@@ -622,7 +637,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
 
-        System.out.println("Gyroscope " + x + ", " + y + ", " + z);
+        //System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
         x *= gyrScale.getRes(); // transform from raw data to degrees/s
         y *= gyrScale.getRes(); // transform from raw data to degrees/s
