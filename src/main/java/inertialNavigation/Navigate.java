@@ -10,6 +10,8 @@ import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
 import sensors.interfaces.Magnetometer;
 import sensors.interfaces.SensorUpdateListener;
+import sensors.dataTypes.*;
+
 
 public class Navigate implements Runnable, SensorUpdateListener{
 	
@@ -40,7 +42,6 @@ public class Navigate implements Runnable, SensorUpdateListener{
 			gyr = mpu9250;
 			
 		} catch (UnsupportedBusNumberException | IOException | InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -51,7 +52,8 @@ public class Navigate implements Runnable, SensorUpdateListener{
     @Override
     public void run()
     {
-        while(!Thread.interrupted())
+    	TimestampedData3D ajustedGyr, ajustedMag;
+    	while(!Thread.interrupted())
         {
             if(dataReady) 
             try
@@ -61,7 +63,26 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 Instruments.setAccelerometer(acc.getLatestAcceleration());
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
                 Instruments.setHeading(mag.getHeading());
-                SensorFusion.MadgwickQuaternionUpdate(Instruments.getAccelerometer(),Instruments.getGyroscope(),Instruments.getMagnetometer(),(float)(DELTA_T/1000000000));
+                
+            	// Examples of calling the filters, READ BEFORE USING!!		!!!
+            	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
+            	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
+            	// We have to make some allowance for this orientation mismatch in feeding the output to the quaternion filter.
+            	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like
+            	// in the LSM9DS0 sensor. This rotation can be modified to allow any convenient orientation convention.
+            	// This is ok by aircraft orientation standards!  
+            	// Pass gyro rate as rad/s
+            	//  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
+
+                ajustedGyr = new TimestampedData3D(Instruments.getGyroscope());
+                ajustedGyr.setX(Instruments.getGyroscope().getX()*(float)Math.PI/180.0f); //Pass gyro rate as rad/s
+                ajustedGyr.setY(Instruments.getGyroscope().getY()*(float)Math.PI/180.0f);
+                ajustedGyr.setZ(Instruments.getGyroscope().getZ()*(float)Math.PI/180.0f);
+                ajustedMag = new TimestampedData3D(Instruments.getMagnetometer());
+                ajustedMag.setX(Instruments.getMagnetometer().getY()); //swap X and Y, Z stays the same
+                ajustedMag.setY(Instruments.getMagnetometer().getX());
+
+                SensorFusion.MadgwickQuaternionUpdate(Instruments.getAccelerometer(),ajustedGyr,ajustedMag,(float)(DELTA_T/TimestampedData3D.NANOS_PER_SEC));
                 System.out.print(  "acc: " + Instruments.getAccelerometer().toString());
                 System.out.print(  "gyr: " + Instruments.getGyroscope().toString());
                 System.out.println("mag: " + Instruments.getMagnetometer().toString());
