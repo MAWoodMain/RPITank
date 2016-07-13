@@ -21,5 +21,6 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="Maven: com.pi4j:pi4j-core:1.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="dio" level="project" />
   </component>
 </module>
