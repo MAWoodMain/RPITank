@@ -5,7 +5,8 @@ package sensors.dataTypes;
  * Created by MAWood on 11/07/2016.
  */
 public class TimestampedData3D extends Data3D
-{
+{    
+	public static final long NANOS_PER_SEC = 1000000000;
     public final long nanoTime;
 
     public TimestampedData3D(float x, float y, float z, long nanoTime)
@@ -23,4 +24,13 @@ public class TimestampedData3D extends Data3D
     {
         this(data.getX(),data.getY(),data.getZ());
     }
+    
+	public String toString()
+	{
+		String format = "%+04.4f";
+		return 	" t: " + String.format(format,(float)(nanoTime/NANOS_PER_SEC)) +
+				" x: " + String.format(format,this.getX()) +
+				" y: " + String.format(format,this.getY()) +
+				" z: " + String.format(format,this.getZ());
+	}
 }
