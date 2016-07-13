@@ -4,7 +4,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
-import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.*;
 
@@ -450,11 +449,15 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
                     updateMagnetometerData();
                     updateAccelerometerData();
                     updateGyroscopeData();
+                    updateThermometerData();
 
                     for(SensorUpdateListener listener:listeners) listener.dataUpdated();
 
                     while(System.nanoTime() - lastTime < waitTime);
                 } catch (IOException e)
+                {
+                    e.printStackTrace();
+                } catch (Exception e)
                 {
                     e.printStackTrace();
                 }
@@ -547,6 +550,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
     {
         byte rawData[] = new byte[2];  // x/y/z gyro register data stored here
         mpu9250.read(TEMP_OUT_H.getValue(),rawData,0,2);  // Read the two raw data registers sequentially into data array
+        mpu9250.read(TEMP_OUT_H.getValue(),rawData,0,2);  // Read again to trigger
         temp.add((float)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
 
@@ -595,6 +599,7 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
 
             mag.add(new TimestampedData3D(x,y,z));
         }
+        ak8963.read(0x09);
     }
 
     @Override
@@ -615,9 +620,12 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
         mpu9250.read(GYRO_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(GYRO_XOUT_H.getValue(), rawData,0,6);  // Read again to trigger
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
+
+        System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
         x *= gyrScale.getRes(); // transform from raw data to degrees/s
         y *= gyrScale.getRes(); // transform from raw data to degrees/s
@@ -644,9 +652,12 @@ public class MPU9250 implements Accelerometer, Gyroscope, Magnetometer, Thermome
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
         mpu9250.read(ACCEL_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(ACCEL_XOUT_H.getValue(), rawData,0,6);  // Read again to trigger
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
+
+        System.out.println("Accelerometer " + x + ", " + y + ", " + z);
 
         x *= gyrScale.getRes(); // transform from raw data to degrees/s
         y *= gyrScale.getRes(); // transform from raw data to degrees/s
