@@ -26,7 +26,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     enum Device
     {
         mpu9250,
-        ak8963;
+        ak8963
     }
 
     private static final MagScale magScale = MagScale.MFS_16BIT;
@@ -138,7 +138,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         Thread.sleep(10);
         write(Device.ak8963,AK8963_CNTL, (byte)0x0F); // Enter Fuse ROM access mode
         Thread.sleep(10);
-        read(Device.ak8963,AK8963_ASAX,3);  // Read the x-, y-, and z-axis calibration values
+        rawData = read(Device.ak8963,AK8963_ASAX,3);  // Read the x-, y-, and z-axis calibration values
         magCalibration[0] =  (float)(rawData[0] - 128)/256f + 1f;   // Return x-axis sensitivity adjustment values, etc.
         magCalibration[1] =  (float)(rawData[1] - 128)/256f + 1f;
         magCalibration[2] =  (float)(rawData[2] - 128)/256f + 1f;
@@ -176,7 +176,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         // Set gyroscope full scale range
         // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-        byte c = (byte) read(Device.mpu9250,GYRO_CONFIG); // get current GYRO_CONFIG register value
+        byte c = read(Device.mpu9250,GYRO_CONFIG); // get current GYRO_CONFIG register value
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
@@ -185,7 +185,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         write(Device.mpu9250,GYRO_CONFIG, c ); // Write new GYRO_CONFIG value to register
 
         // Set accelerometer full-scale range configuration
-        c = (byte) read(Device.mpu9250,ACCEL_CONFIG); // get current ACCEL_CONFIG register value
+        c = read(Device.mpu9250,ACCEL_CONFIG); // get current ACCEL_CONFIG register value
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
         c = (byte)(c | accScale.getValue() << 3); // Set full scale range for the accelerometer
@@ -251,7 +251,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // At end of sample accumulation, turn off FIFO sensor read
         write(Device.mpu9250,FIFO_EN,0x00);        // Disable gyro and accelerometer sensors for FIFO
         byte[] buffer = new byte[2];
-        read(Device.mpu9250, FIFO_COUNTH,2); // read FIFO sample count
+        buffer = read(Device.mpu9250, FIFO_COUNTH,2); // read FIFO sample count
 
         int packetCount = (buffer[0] << 8) | buffer[1];
         packetCount /= 12;
@@ -262,7 +262,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         for(int s = 0; s < packetCount; s++)
         {
-            read(Device.mpu9250,FIFO_R_W,12); // read FIFO sample count
+            buffer = read(Device.mpu9250,FIFO_R_W,12); // read FIFO sample count
 
             accelBiasl[0] += (buffer[0] << 8) | buffer[1];
             accelBiasl[1] += (buffer[2] << 8) | buffer[3];
@@ -304,11 +304,11 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         write(Device.mpu9250,ZG_OFFSET_L, buffer[5]);
 
         int[] accelBiasReg = new int[]{0,0,0};
-        read(Device.mpu9250,XA_OFFSET_H,2);
+        buffer = read(Device.mpu9250,XA_OFFSET_H,2);
         accelBiasReg[0] = (buffer[0] << 8) | buffer[1];
-        read(Device.mpu9250,YA_OFFSET_H,2);
+        buffer = read(Device.mpu9250,YA_OFFSET_H,2);
         accelBiasReg[1] = (buffer[0] << 8) | buffer[1];
-        read(Device.mpu9250,ZA_OFFSET_H,2);
+        buffer = read(Device.mpu9250,ZA_OFFSET_H,2);
         accelBiasReg[2] = (buffer[0] << 8) | buffer[1];
 
 
@@ -372,12 +372,12 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            read(Device.mpu9250,ACCEL_XOUT_H, 6);
+            buffer = read(Device.mpu9250,ACCEL_XOUT_H, 6);
             ax += ((buffer[0] << 8) | buffer[1]);
             ay += ((buffer[2] << 8) | buffer[3]);
             az += ((buffer[4] << 8) | buffer[5]);
 
-            read(Device.mpu9250,GYRO_XOUT_H,6);
+            buffer = read(Device.mpu9250,GYRO_XOUT_H,6);
             gx += ((buffer[0] << 8) | buffer[1]);
             gy += ((buffer[2] << 8) | buffer[3]);
             gz += ((buffer[4] << 8) | buffer[5]);
@@ -394,12 +394,12 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            read(Device.mpu9250,GYRO_XOUT_H,6);
+            buffer = read(Device.mpu9250,GYRO_XOUT_H,6);
             gx += ((buffer[0] << 8) | buffer[1]);
             gy += ((buffer[2] << 8) | buffer[3]);
             gz += ((buffer[4] << 8) | buffer[5]);
 
-            read(Device.mpu9250,ACCEL_XOUT_H,6);
+            buffer = read(Device.mpu9250,ACCEL_XOUT_H,6);
             ax += ((buffer[0] << 8) | buffer[1]);
             ay += ((buffer[2] << 8) | buffer[3]);
             az += ((buffer[4] << 8) | buffer[5]);
@@ -568,8 +568,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     public void updateThermometerData() throws Exception
     {
         byte rawData[] = new byte[2];  // x/y/z gyro register data stored here
-        read(Device.mpu9250,TEMP_OUT_H,2);  // Read the two raw data registers sequentially into data array
-        read(Device.mpu9250,TEMP_OUT_H,2);  // Read again to trigger
+        rawData = read(Device.mpu9250,TEMP_OUT_H,2);  // Read the two raw data registers sequentially into data array
         temp.add((float)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
 
@@ -598,7 +597,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         int newMagData = (read(Device.ak8963,AK8963_ST1) & 0x01);
         if (newMagData == 0) return;
         byte[] buffer = new byte[7];
-        read(Device.ak8963,AK8963_ST1,7);
+        buffer =read(Device.ak8963,AK8963_ST1,7);
 
         byte c = buffer[6];
         if((c & 0x08) == 0)
@@ -638,7 +637,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
-        read(Device.mpu9250,GYRO_XOUT_H,6);  // Read the six raw data registers sequentially into data array
+        rawData = read(Device.mpu9250,GYRO_XOUT_H,6);  // Read the six raw data registers sequentially into data array
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
@@ -669,7 +668,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
-        read(Device.mpu9250,ACCEL_XOUT_H, 6);  // Read the six raw data registers sequentially into data array
+        rawData = read(Device.mpu9250,ACCEL_XOUT_H, 6);  // Read the six raw data registers sequentially into data array
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
