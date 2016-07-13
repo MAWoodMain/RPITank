@@ -6,7 +6,7 @@ package sensors.dataTypes;
  */
 public class Data3D {
 
-    private float x;
+	private float x;
     private float y;
     private float z;
 
@@ -42,7 +42,7 @@ public class Data3D {
 
 	public void normalize(){
 		float norm;
-		// Normalise accelerometer measurement
+		// Normalise measurements
 		norm = (float)Math.sqrt(x*x + y*y + z*z);
 		if (norm == 0.0f)
 			throw new ArithmeticException(); // handle NaN
@@ -56,7 +56,7 @@ public class Data3D {
 	public String toString()
 	{
 		String format = "%+04.3f";
-		return   "x: " + String.format(format,x) +
+		return 	" x: " + String.format(format,x) +
 				" y: " + String.format(format,y) +
 				" z: " + String.format(format,z);
 	}
