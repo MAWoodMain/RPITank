@@ -54,9 +54,8 @@ public abstract class Sensor implements Runnable
                     for(SensorUpdateListener listener:listeners) listener.dataUpdated();
 
                     while(System.nanoTime() - lastTime < waitTime);
-                } catch (Exception e)
+                } catch (Exception ignored)
                 {
-                    e.printStackTrace();
                 }
             }
         }

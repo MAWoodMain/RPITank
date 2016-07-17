@@ -273,6 +273,8 @@ public class MPU9250 extends NineDOF
         accelBiasReg[1] -= (accelBiasl[1]/8);
         accelBiasReg[2] -= (accelBiasl[2]/8);
 
+        buffer = new byte[6];
+
         buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF);
         buffer[1] = (byte)((accelBiasReg[0])      & 0xFF);
         buffer[1] = (byte)(buffer[1] | mask_bit[0]); // preserve temperature compensation bit when writing back to accelerometer bias registers

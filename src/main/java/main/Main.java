@@ -15,7 +15,7 @@ class Main
 {
     public static void main(String[] args) throws IOException, I2CFactory.UnsupportedBusNumberException, InterruptedException
     {
-        I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
+        I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_0);
 
         MPU9250 mpu9250 = new MPU9250(
                 new Pi4jI2CDevice(bus.getDevice(0x68)), // MPU9250 I2C device
