@@ -5,12 +5,12 @@ import java.io.IOException;
 import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
-import sensors.MPU9250.MPU9250_Pi4j;
-import sensors.interfaces.Accelerometer;
-import sensors.interfaces.Gyroscope;
-import sensors.interfaces.Magnetometer;
-import sensors.interfaces.SensorUpdateListener;
-import sensors.dataTypes.*;
+import devices.sensorImplimentations.MPU9250.MPU9250_Pi4j;
+import devices.sensors.interfaces.Accelerometer;
+import devices.sensors.interfaces.Gyroscope;
+import devices.sensors.interfaces.Magnetometer;
+import devices.sensors.interfaces.SensorUpdateListener;
+import devices.sensors.dataTypes.*;
 
 
 public class Navigate implements Runnable, SensorUpdateListener{
@@ -64,7 +64,7 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
                 
             	// Examples of calling the filters, READ BEFORE USING!!		!!!
-            	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
+            	// sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
             	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
             	// We have to make some allowance for this orientation mismatch in feeding the output to the quaternion filter.
             	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like
