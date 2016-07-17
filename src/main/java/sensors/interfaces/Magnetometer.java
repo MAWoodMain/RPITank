@@ -8,11 +8,9 @@ import sensors.dataTypes.TimestampedData3D;
  */
 public interface Magnetometer
 {
-    float getHeading();
     TimestampedData3D getLatestGaussianData();
     TimestampedData3D getGaussianData(int i);
     int getMagnetometerReadingCount();
-    float getMaxGauss();
-    float getMinGauss();
+
     void updateMagnetometerData() throws Exception;
 }

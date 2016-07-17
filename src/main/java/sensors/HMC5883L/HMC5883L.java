@@ -7,7 +7,6 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 import sensors.dataTypes.CircularArrayRing;
-import sensors.dataTypes.Data3D;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.Magnetometer;
 
@@ -77,29 +76,6 @@ public class HMC5883L implements Magnetometer, Runnable
             w = (short) -((0xFFFF - w) + 1);
 
         return w;
-    }
-
-    public float getHeading()
-    {
-        double heading;
-        Data3D data = this.getLatestGaussianData();
-
-        heading = Math.atan2(data.getY(), data.getX());
-        if (heading < 0)
-            heading += (2 * Math.PI);
-        return (float) Math.toDegrees(heading);
-    }
-
-    @Override
-    public float getMaxGauss()
-    {
-        return 0;
-    }
-
-    @Override
-    public float getMinGauss()
-    {
-        return 0;
     }
 
     @Override

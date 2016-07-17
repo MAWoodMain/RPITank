@@ -11,7 +11,6 @@ public interface Gyroscope
     TimestampedData3D getLatestRotationalAcceleration();
     TimestampedData3D getRotationalAcceleration(int i);
     int getGyroscopeReadingCount();
-    float getMaxRotationalAcceleration();
-    float getMinRotationalAcceleration();
+
     void updateGyroscopeData() throws Exception;
 }

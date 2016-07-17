@@ -62,7 +62,6 @@ public class Navigate implements Runnable, SensorUpdateListener{
             	Instruments.setMagnetometer( mag.getLatestGaussianData());
                 Instruments.setAccelerometer(acc.getLatestAcceleration());
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
-                Instruments.setHeading(mag.getHeading());
                 
             	// Examples of calling the filters, READ BEFORE USING!!		!!!
             	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
@@ -87,7 +86,6 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 System.out.print(  "gyr: " + Instruments.getGyroscope().toString());
                 System.out.println("mag: " + Instruments.getMagnetometer().toString());
                 System.out.println("Yaw,Pirch & Roll: " + Instruments.getAngles().toString());
-                System.out.println(mag.getHeading());
 
                 Thread.sleep(1);
             } catch (InterruptedException e)
