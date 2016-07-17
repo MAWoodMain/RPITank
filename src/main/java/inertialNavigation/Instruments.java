@@ -1,6 +1,5 @@
 package inertialNavigation;
 
-import devices.sensors.dataTypes.Quaternion;
 import devices.sensors.dataTypes.TimestampedData3D;
 
 /**

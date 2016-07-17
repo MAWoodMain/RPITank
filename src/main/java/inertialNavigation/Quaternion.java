@@ -1,4 +1,4 @@
-package devices.sensors.dataTypes;
+package inertialNavigation;
 
 public class Quaternion 
 {
