@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
-import sensors.MPU9250.MPU9250;
+import sensors.MPU9250.MPU9250_Pi4j;
 import sensors.interfaces.Accelerometer;
 import sensors.interfaces.Gyroscope;
 import sensors.interfaces.Magnetometer;
@@ -34,7 +34,7 @@ public class Navigate implements Runnable, SensorUpdateListener{
 	{
 		dataReady  = false;
 		try {
-			MPU9250 mpu9250  = new MPU9250(SAMPLE_RATE, SAMPLE_SIZE); //sample at 100 Hertz
+			MPU9250_Pi4j mpu9250  = new MPU9250_Pi4j(SAMPLE_RATE, SAMPLE_SIZE); //sample at 100 Hertz
 			mpu9250.registerInterest(this);
 			new Thread(mpu9250).start();
 			acc = mpu9250;

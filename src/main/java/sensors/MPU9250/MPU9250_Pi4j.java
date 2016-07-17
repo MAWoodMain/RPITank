@@ -1,19 +1,14 @@
 package sensors.MPU9250;
 
+import com.pi4j.io.i2c.I2CBus;
+import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import jdk.dio.DeviceManager;
-import jdk.dio.i2cbus.I2CDevice;
-import jdk.dio.i2cbus.I2CDeviceConfig;
 import sensors.dataTypes.CircularArrayRing;
 import sensors.dataTypes.TimestampedData3D;
 import sensors.interfaces.*;
 
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-
-
 
 import static sensors.MPU9250.Registers.*;
 
@@ -21,14 +16,8 @@ import static sensors.MPU9250.Registers.*;
  * RPITank
  * Created by MAWood on 07/07/2016.
  */
-public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, Thermometer, Runnable
+public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, Thermometer, Runnable
 {
-    enum Device
-    {
-        mpu9250,
-        ak8963
-    }
-
     private static final MagScale magScale = MagScale.MFS_16BIT;
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final AccScale accScale = AccScale.AFS_4G;
@@ -49,19 +38,20 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     private final CircularArrayRing<TimestampedData3D> mag;
     private final CircularArrayRing<Float> temp;
 
-    private final I2CDeviceConfig mpu9250;
-    private final I2CDeviceConfig ak8963;
-
     ArrayList<SensorUpdateListener> listeners;
 
     private boolean paused;
 
+    private final I2CDevice mpu9250;
+    private final I2CDevice ak8963;
 
-    public MPU9250_Oracle(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
+    public MPU9250_Pi4j() throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
-        this.mpu9250 = new I2CDeviceConfig(1,0x68,7, 100000);
-        this.ak8963 = new I2CDeviceConfig(1,0x0C,7, 100000);
-
+    	this(10,10);
+    }
+    
+    public MPU9250_Pi4j(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
+    {
         this.sampleRate = sampleRate;
         this.paused = true;
         this.accel = new CircularArrayRing<>(sampleSize);
@@ -69,8 +59,14 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         this.mag = new CircularArrayRing<>(sampleSize);
         this.temp = new CircularArrayRing<>(sampleSize);
         // get device
+        I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
+        this.mpu9250 = bus.getDevice(0x68);
+        this.ak8963 = bus.getDevice(0x0C);
 
         listeners = new ArrayList<>();
+        Thread.sleep(2000);
+
+        System.out.println(mpu9250.read(WHO_AM_I_MPU9250.getValue()));
 
         selfTest();
         calibrateGyroAcc();
@@ -134,20 +130,20 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         // First extract the factory calibration for each magnetometer axis
         byte rawData[] = new byte[3];  // x/y/z gyro calibration data stored here
-        write(Device.ak8963,AK8963_CNTL,(byte) 0x00); // Power down magnetometer
+        ak8963.write(AK8963_CNTL.getValue(),(byte) 0x00); // Power down magnetometer
         Thread.sleep(10);
-        write(Device.ak8963,AK8963_CNTL, (byte)0x0F); // Enter Fuse ROM access mode
+        ak8963.write(AK8963_CNTL.getValue(), (byte)0x0F); // Enter Fuse ROM access mode
         Thread.sleep(10);
-        rawData = read(Device.ak8963,AK8963_ASAX,3);  // Read the x-, y-, and z-axis calibration values
+        ak8963.read(AK8963_ASAX.getValue(), rawData,0,3);  // Read the x-, y-, and z-axis calibration values
         magCalibration[0] =  (float)(rawData[0] - 128)/256f + 1f;   // Return x-axis sensitivity adjustment values, etc.
         magCalibration[1] =  (float)(rawData[1] - 128)/256f + 1f;
         magCalibration[2] =  (float)(rawData[2] - 128)/256f + 1f;
-        write(Device.ak8963,AK8963_CNTL, (byte)0x00); // Power down magnetometer
+        ak8963.write(AK8963_CNTL.getValue(), (byte)0x00); // Power down magnetometer
         Thread.sleep(10);
         // Configure the magnetometer for continuous read and highest resolution
         // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-        write(Device.ak8963,AK8963_CNTL, (byte)(magScale.getValue() << 4 | M_MODE.getValue())); // Set magnetometer data resolution and sample ODR
+        ak8963.write(AK8963_CNTL.getValue(), (byte)(magScale.getValue() << 4 | M_MODE.getValue())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
     }
 
@@ -155,11 +151,11 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         // wake up device
         // Clear sleep mode bit (6), enable all sensors
-        write(Device.mpu9250,PWR_MGMT_1, (byte)0x00);
+        mpu9250.write(PWR_MGMT_1.getValue(), (byte)0x00);
         Thread.sleep(100); // Wait for all registers to reset
 
         // get stable time source
-        write(Device.mpu9250,PWR_MGMT_1, (byte)0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
+        mpu9250.write(PWR_MGMT_1.getValue(), (byte)0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
         Thread.sleep(200);
 
         // Configure Gyro and Thermometer
@@ -168,36 +164,36 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // be higher than 1 / 0.0059 = 170 Hz
         // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
         // With the MPU9250_Pi4j, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
-        write(Device.mpu9250,CONFIG, (byte)0x03);
+        mpu9250.write(CONFIG.getValue(), (byte)0x03);
 
         // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
-        write(Device.mpu9250,SMPLRT_DIV, (byte)0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
+        mpu9250.write(SMPLRT_DIV.getValue(), (byte)0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
         // determined inset in CONFIG above
 
         // Set gyroscope full scale range
         // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-        byte c = read(Device.mpu9250,GYRO_CONFIG); // get current GYRO_CONFIG register value
+        byte c = (byte) mpu9250.read(GYRO_CONFIG.getValue()); // get current GYRO_CONFIG register value
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
         c = (byte)(c | gyrScale.getValue() << 3); // Set full scale range for the gyro
         // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
-        write(Device.mpu9250,GYRO_CONFIG, c ); // Write new GYRO_CONFIG value to register
+        mpu9250.write(GYRO_CONFIG.getValue(), c ); // Write new GYRO_CONFIG value to register
 
         // Set accelerometer full-scale range configuration
-        c = read(Device.mpu9250,ACCEL_CONFIG); // get current ACCEL_CONFIG register value
+        c = (byte) mpu9250.read(ACCEL_CONFIG.getValue()); // get current ACCEL_CONFIG register value
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
         c = (byte)(c | accScale.getValue() << 3); // Set full scale range for the accelerometer
-        write(Device.mpu9250,ACCEL_CONFIG, c); // Write new ACCEL_CONFIG register value
+        mpu9250.write(ACCEL_CONFIG.getValue(), c); // Write new ACCEL_CONFIG register value
 
         // Set accelerometer sample rate configuration
         // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
         // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
-        c = read(Device.mpu9250,ACCEL_CONFIG2.getValue()); // get current ACCEL_CONFIG2 register value
+        c = (byte) mpu9250.read(ACCEL_CONFIG2.getValue()); // get current ACCEL_CONFIG2 register value
         c = (byte)(c & ~0x0F); // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
         c = (byte)(c | 0x03);  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
-        write(Device.mpu9250,ACCEL_CONFIG2, c); // Write new ACCEL_CONFIG2 register value
+        mpu9250.write(ACCEL_CONFIG2.getValue(), c); // Write new ACCEL_CONFIG2 register value
 
         // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates,
         // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
@@ -207,51 +203,51 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips
         // can join the I2C bus and all can be controlled by the Arduino as master
         //   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);
-        write(Device.mpu9250,INT_PIN_CFG, (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
-        write(Device.mpu9250,INT_ENABLE, (byte)0x01);  // Enable data ready (bit 0) interrupt
+        mpu9250.write(INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
+        mpu9250.write(INT_ENABLE.getValue(), (byte)0x01);  // Enable data ready (bit 0) interrupt
         Thread.sleep(100);
     }
 
     private void calibrateGyroAcc() throws IOException, InterruptedException
     {
         // Write a one to bit 7 reset bit; toggle reset device
-        write(Device.mpu9250,PWR_MGMT_1,(byte)0x80);
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte)0x80);
         Thread.sleep(100);
 
         // get stable time source; Auto select clock source to be PLL gyroscope reference if ready
         // else use the internal oscillator, bits 2:0 = 001
-        write(Device.mpu9250,PWR_MGMT_1,(byte)0x01);
-        write(Device.mpu9250,PWR_MGMT_2,(byte)0x00);
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte)0x01);
+        mpu9250.write(PWR_MGMT_2.getValue(),(byte)0x00);
         Thread.sleep(200);
 
 
         // Configure device for bias calculation
-        write(Device.mpu9250,INT_ENABLE,(byte) 0x00);   // Disable all interrupts
-        write(Device.mpu9250,FIFO_EN,(byte) 0x00);      // Disable FIFO
-        write(Device.mpu9250,PWR_MGMT_1,(byte) 0x00);   // Turn on internal clock source
-        write(Device.mpu9250,I2C_MST_CTRL,(byte) 0x00); // Disable I2C master
-        write(Device.mpu9250,USER_CTRL,(byte) 0x00);    // Disable FIFO and I2C master modes
-        write(Device.mpu9250,USER_CTRL,(byte) 0x0C);    // Reset FIFO and DMP
+        mpu9250.write(INT_ENABLE.getValue(),(byte) 0x00);   // Disable all interrupts
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x00);      // Disable FIFO
+        mpu9250.write(PWR_MGMT_1.getValue(),(byte) 0x00);   // Turn on internal clock source
+        mpu9250.write(I2C_MST_CTRL.getValue(),(byte) 0x00); // Disable I2C master
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x00);    // Disable FIFO and I2C master modes
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x0C);    // Reset FIFO and DMP
         Thread.sleep(15);
 
         // Configure MPU6050 gyro and accelerometer for bias calculation
-        write(Device.mpu9250,CONFIG,(byte) 0x01);       // Set low-pass filter to 188 Hz
-        write(Device.mpu9250,SMPLRT_DIV,(byte) 0x00);   // Set sample rate to 1 kHz
-        write(Device.mpu9250,GYRO_CONFIG,(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
-        write(Device.mpu9250,ACCEL_CONFIG,(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
+        mpu9250.write(CONFIG.getValue(),(byte) 0x01);       // Set low-pass filter to 188 Hz
+        mpu9250.write(SMPLRT_DIV.getValue(),(byte) 0x00);   // Set sample rate to 1 kHz
+        mpu9250.write(GYRO_CONFIG.getValue(),(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
+        mpu9250.write(ACCEL_CONFIG.getValue(),(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
 
         int gyrosensitivity = 131;     // = 131 LSB/degrees/sec
         int accelSensitivity = 16384;  // = 16384 LSB/g
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
-        write(Device.mpu9250,USER_CTRL, 0x40);   // Enable FIFO
-        write(Device.mpu9250,FIFO_EN, 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
+        mpu9250.write(USER_CTRL.getValue(),(byte) 0x40);   // Enable FIFO
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
         Thread.sleep(40); // accumulate 40 samples in 40 milliseconds = 480 bytes
 
         // At end of sample accumulation, turn off FIFO sensor read
-        write(Device.mpu9250,FIFO_EN,0x00);        // Disable gyro and accelerometer sensors for FIFO
+        mpu9250.write(FIFO_EN.getValue(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
         byte[] buffer = new byte[2];
-        buffer = read(Device.mpu9250, FIFO_COUNTH,2); // read FIFO sample count
+        mpu9250.read(FIFO_COUNTH.getValue(),buffer,0,2); // read FIFO sample count
 
         int packetCount = (buffer[0] << 8) | buffer[1];
         packetCount /= 12;
@@ -262,7 +258,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         for(int s = 0; s < packetCount; s++)
         {
-            buffer = read(Device.mpu9250,FIFO_R_W,12); // read FIFO sample count
+            mpu9250.read(FIFO_R_W.getValue(),buffer,0,12); // read FIFO sample count
 
             accelBiasl[0] += (buffer[0] << 8) | buffer[1];
             accelBiasl[1] += (buffer[2] << 8) | buffer[3];
@@ -296,19 +292,19 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
 
         // Push gyro biases to hardware registers
-        write(Device.mpu9250,XG_OFFSET_H, buffer[0]);
-        write(Device.mpu9250,XG_OFFSET_L, buffer[1]);
-        write(Device.mpu9250,YG_OFFSET_H, buffer[2]);
-        write(Device.mpu9250,YG_OFFSET_L, buffer[3]);
-        write(Device.mpu9250,ZG_OFFSET_H, buffer[4]);
-        write(Device.mpu9250,ZG_OFFSET_L, buffer[5]);
+        mpu9250.write(XG_OFFSET_H.getValue(), buffer[0]);
+        mpu9250.write(XG_OFFSET_L.getValue(), buffer[1]);
+        mpu9250.write(YG_OFFSET_H.getValue(), buffer[2]);
+        mpu9250.write(YG_OFFSET_L.getValue(), buffer[3]);
+        mpu9250.write(ZG_OFFSET_H.getValue(), buffer[4]);
+        mpu9250.write(ZG_OFFSET_L.getValue(), buffer[5]);
 
         int[] accelBiasReg = new int[]{0,0,0};
-        buffer = read(Device.mpu9250,XA_OFFSET_H,2);
+        mpu9250.read(XA_OFFSET_H.getValue(),buffer,0,2);
         accelBiasReg[0] = (buffer[0] << 8) | buffer[1];
-        buffer = read(Device.mpu9250,YA_OFFSET_H,2);
+        mpu9250.read(YA_OFFSET_H.getValue(),buffer,0,2);
         accelBiasReg[1] = (buffer[0] << 8) | buffer[1];
-        buffer = read(Device.mpu9250,ZA_OFFSET_H,2);
+        mpu9250.read(ZA_OFFSET_H.getValue(),buffer,0,2);
         accelBiasReg[2] = (buffer[0] << 8) | buffer[1];
 
 
@@ -337,12 +333,12 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // Apparently this is not working for the acceleration biases in the MPU-9250
         // Are we handling the temperature correction bit properly?
         // Push accelerometer biases to hardware registers
-        /*write(Device.mpu9250,XA_OFFSET_H.getValue(), buffer[0]);
-        write(Device.mpu9250,XA_OFFSET_L.getValue(), buffer[1]);
-        write(Device.mpu9250,YA_OFFSET_H.getValue(), buffer[2]);
-        write(Device.mpu9250,YA_OFFSET_L.getValue(), buffer[3]);
-        write(Device.mpu9250,ZA_OFFSET_H.getValue(), buffer[4]);
-        write(Device.mpu9250,ZA_OFFSET_L.getValue(), buffer[5]);
+        /*mpu9250.write(XA_OFFSET_H.getValue(), buffer[0]);
+        mpu9250.write(XA_OFFSET_L.getValue(), buffer[1]);
+        mpu9250.write(YA_OFFSET_H.getValue(), buffer[2]);
+        mpu9250.write(YA_OFFSET_L.getValue(), buffer[3]);
+        mpu9250.write(ZA_OFFSET_H.getValue(), buffer[4]);
+        mpu9250.write(ZA_OFFSET_L.getValue(), buffer[5]);
         */
 
 
@@ -352,88 +348,134 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
     }
 
+    /**
+     * Accelerometer and gyroscope self test; check calibration wrt factory settings
+     * calculates & prints percent deviation from factory trim values, +/- 14 or less deviation is a pass
+     * @throws IOException
+     * @throws InterruptedException
+     */
     private void selfTest() throws IOException, InterruptedException
     {
-        // Set gyro sample rate to 1 kHz
-        write(Device.mpu9250,SMPLRT_DIV,0x00);
-        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
-        write(Device.mpu9250,CONFIG,0x02);
+
+        byte FS = 0;
+        int bytesRead =0;
+
+        mpu9250.write(SMPLRT_DIV.getValue(),(byte)0x00); // Set gyro sample rate to 1 kHz
+        Thread.sleep(2);
+        mpu9250.write(CONFIG.getValue(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+        Thread.sleep(2);
         // Set full scale range for the gyro to 250 dps
-        write(Device.mpu9250,GYRO_CONFIG,GyrScale.GFS_250DPS.getValue());
+        mpu9250.write(GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getValue());
+        Thread.sleep(2);
         // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
-        write(Device.mpu9250,ACCEL_CONFIG2,0x02);
+        mpu9250.write(ACCEL_CONFIG2.getValue(),(byte)0x02);
+        Thread.sleep(2);
         // Set full scale range for the accelerometer to 2 g
-        write(Device.mpu9250,ACCEL_CONFIG, AccScale.AFS_2G.getValue());
+        mpu9250.write(ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccScale.AFS_2G.getValue());
+        Thread.sleep(2);
 
         final int TEST_LENGTH = 200;
         byte[] buffer = new byte[]{0,0,0,0,0,0};
-        int ax,ay,az,gx,gy,gz;
-        ax=ay=az=gx=gy=gz=0;
+
+        short[] aAvg = new short[3];
+        short[] gAvg = new short[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            buffer = read(Device.mpu9250,ACCEL_XOUT_H, 6);
-            ax += ((buffer[0] << 8) | buffer[1]);
-            ay += ((buffer[2] << 8) | buffer[3]);
-            az += ((buffer[4] << 8) | buffer[5]);
+            bytesRead = mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
+            System.out.print("ACCEL_XOUT_H read - "+ bytesRead+":");
+            System.out.println(" "+bytesToHex(buffer));
+            aAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            aAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            aAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            Thread.sleep(2);
 
-            buffer = read(Device.mpu9250,GYRO_XOUT_H,6);
-            gx += ((buffer[0] << 8) | buffer[1]);
-            gy += ((buffer[2] << 8) | buffer[3]);
-            gz += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            bytesRead = mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
+            System.out.print("GYRO_XOUT_H  read - "+ bytesRead+":");
+            System.out.println(" "+bytesToHex(buffer));
+            gAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            gAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            gAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            Thread.sleep(2);
+            buffer = new byte[]{0,0,0,0,0,0};
         }
 
-        int[] aAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
-        int[] gAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+        for(int i = 0; i<3; i++)
+        {
+            aAvg[i] /= TEST_LENGTH;
+            gAvg[i] /= TEST_LENGTH;
+        }
 
-        write(Device.mpu9250,ACCEL_CONFIG, 0xE0);
-        write(Device.mpu9250,GYRO_CONFIG, 0xE0);
-        Thread.sleep(25);
+        mpu9250.write(ACCEL_CONFIG.getValue(), (byte)0xE0);
+        Thread.sleep(2);
+        mpu9250.write(GYRO_CONFIG.getValue(), (byte)0xE0);
+        Thread.sleep(2);
 
-        ax=ay=az=gx=gy=gz=0;
+        int[] aSTAvg = new int[3];
+        int[] gSTAvg = new int[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            buffer = read(Device.mpu9250,GYRO_XOUT_H,6);
-            gx += ((buffer[0] << 8) | buffer[1]);
-            gy += ((buffer[2] << 8) | buffer[3]);
-            gz += ((buffer[4] << 8) | buffer[5]);
+            mpu9250.read(GYRO_XOUT_H.getValue(),buffer,0,6);
+            aSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            aSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            aSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            Thread.sleep(2);
 
-            buffer = read(Device.mpu9250,ACCEL_XOUT_H,6);
-            ax += ((buffer[0] << 8) | buffer[1]);
-            ay += ((buffer[2] << 8) | buffer[3]);
-            az += ((buffer[4] << 8) | buffer[5]);
+            mpu9250.read(ACCEL_XOUT_H.getValue(),buffer,0,6);
+            gSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
+            gSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
+            gSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            buffer = new byte[]{0,0,0,0,0,0};
+            Thread.sleep(2);
         }
 
-        int[] aSTAvg = new int[]{ax/TEST_LENGTH, ay/TEST_LENGTH, az/TEST_LENGTH};
-        int[] gSTAvg = new int[]{gx/TEST_LENGTH, gy/TEST_LENGTH, gz/TEST_LENGTH};
+        for(int i = 0; i<3; i++)
+        {
+            aSTAvg[i] /= TEST_LENGTH;
+            gSTAvg[i] /= TEST_LENGTH;
+        }
 
-        write(Device.mpu9250,GYRO_CONFIG,GyrScale.GFS_250DPS.getValue());
-        write(Device.mpu9250,ACCEL_CONFIG, AccScale.AFS_2G.getValue());
+        Thread.sleep(2);
+        mpu9250.write(GYRO_CONFIG.getValue(),GyrScale.GFS_250DPS.getValue());
+        Thread.sleep(2);
+        mpu9250.write(ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
         Thread.sleep(25);
 
         int[] selfTest = new int[6];
 
-        selfTest[0] = read(Device.mpu9250,SELF_TEST_X_ACCEL);
-        selfTest[1] = read(Device.mpu9250,SELF_TEST_Y_ACCEL);
-        selfTest[2] = read(Device.mpu9250,SELF_TEST_Z_ACCEL);
-        selfTest[3] = read(Device.mpu9250,SELF_TEST_X_GYRO);
-        selfTest[4] = read(Device.mpu9250,SELF_TEST_Y_GYRO);
-        selfTest[5] = read(Device.mpu9250,SELF_TEST_Z_GYRO);
+        selfTest[0] = mpu9250.read(SELF_TEST_X_ACCEL.getValue());
+        Thread.sleep(2);
+        selfTest[1] = mpu9250.read(SELF_TEST_Y_ACCEL.getValue());
+        Thread.sleep(2);
+        selfTest[2] = mpu9250.read(SELF_TEST_Z_ACCEL.getValue());
+        Thread.sleep(2);
+        selfTest[3] = mpu9250.read(SELF_TEST_X_GYRO.getValue());
+        Thread.sleep(2);
+        selfTest[4] = mpu9250.read(SELF_TEST_Y_GYRO.getValue());
+        Thread.sleep(2);
+        selfTest[5] = mpu9250.read(SELF_TEST_Z_GYRO.getValue());
+        Thread.sleep(2);
 
         float[] factoryTrim = new float[6];
 
-        factoryTrim[0] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[0] - 1.0);
-        factoryTrim[1] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[1] - 1.0);
-        factoryTrim[2] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[2] - 1.0);
-        factoryTrim[3] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[3] - 1.0);
-        factoryTrim[4] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[4] - 1.0);
-        factoryTrim[5] = (float)(2620)*(float)Math.pow(1.01,(float)selfTest[5] - 1.0);
+        factoryTrim[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[0] - 1f);
+        factoryTrim[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[1] - 1f);
+        factoryTrim[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[2] - 1f);
+        factoryTrim[3] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[3] - 1f);
+        factoryTrim[4] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[4] - 1f);
+        factoryTrim[5] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[5] - 1f);
+
+        float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0];
+        float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1];
+        float aZAccuracy = 100*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2];
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
-        System.out.println("x: " + 100.0*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0] + "%");
-        System.out.println("y: " + 100.0*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1] + "%");
-        System.out.println("z: " + 100.0*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2] + "%");
+        System.out.println("x: " + aXAccuracy + "%");
+        System.out.println("y: " + aYAccuracy + "%");
+        System.out.println("z: " + aZAccuracy + "%");
         System.out.println("Gyroscope accuracy:(% away from factory values)");
         System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
         System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
@@ -457,13 +499,6 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
                     updateAccelerometerData();
                     updateGyroscopeData();
                     updateThermometerData();
-                    Thread.sleep(100);
-                    short x = -110;
-                    short y = 100;
-                    short z = 100;
-                    //write(Device.mpu9250,XA_OFFSET_H.getValue(), intToByteArray(x));
-                    //write(Device.mpu9250,YA_OFFSET_H.getValue(), intToByteArray(y));
-                    //write(Device.mpu9250,ZA_OFFSET_H.getValue(), intToByteArray(z));
                     Thread.sleep(100);
 
 
@@ -568,7 +603,8 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     public void updateThermometerData() throws Exception
     {
         byte rawData[] = new byte[2];  // x/y/z gyro register data stored here
-        rawData = read(Device.mpu9250,TEMP_OUT_H,2);  // Read the two raw data registers sequentially into data array
+        mpu9250.read(TEMP_OUT_H.getValue(),rawData,0,2);  // Read the two raw data registers sequentially into data array
+        mpu9250.read(TEMP_OUT_H.getValue(),rawData,0,2);  // Read again to trigger
         temp.add((float)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
 
@@ -594,10 +630,10 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     @Override
     public void updateMagnetometerData() throws IOException
     {
-        int newMagData = (read(Device.ak8963,AK8963_ST1) & 0x01);
+        int newMagData = (ak8963.read(AK8963_ST1.getValue()) & 0x01);
         if (newMagData == 0) return;
         byte[] buffer = new byte[7];
-        buffer =read(Device.ak8963,AK8963_ST1,7);
+        ak8963.read(AK8963_ST1.getValue(), buffer,0,7);
 
         byte c = buffer[6];
         if((c & 0x08) == 0)
@@ -617,7 +653,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
             mag.add(new TimestampedData3D(x,y,z));
         }
-        read(Device.ak8963,0x09);
+        ak8963.read(0x09);
     }
 
     @Override
@@ -637,7 +673,8 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
-        rawData = read(Device.mpu9250,GYRO_XOUT_H,6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(GYRO_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(GYRO_XOUT_H.getValue(), rawData,0,6);  // Read again to trigger
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
@@ -668,7 +705,8 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     {
         float x,y,z;
         byte rawData[] = new byte[6];  // x/y/z gyro register data stored here
-        rawData = read(Device.mpu9250,ACCEL_XOUT_H, 6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(ACCEL_XOUT_H.getValue(), rawData,0,6);  // Read the six raw data registers sequentially into data array
+        mpu9250.read(ACCEL_XOUT_H.getValue(), rawData,0,6);  // Read again to trigger
         x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
         y = (rawData[2] << 8) | rawData[3] ;
         z = (rawData[4] << 8) | rawData[5] ;
@@ -685,125 +723,21 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
         accel.add(new TimestampedData3D(x,y,z));
     }
-
-    private void write(Device device, Registers register, int value)
-    {
-        write(device,register,(byte)value);
-    }
-
-    private void write(Device deviceType, Registers register, byte value)
-    {
-        I2CDevice device = null;
-        try {
-            switch (deviceType)
-            {
-                case mpu9250:
-                    device = DeviceManager.open(mpu9250);
-                    break;
-                case ak8963:
-                    device = DeviceManager.open(ak8963);
-                    break;
-                default:
-                    return;
-
-            }
-            ByteBuffer buffer = ByteBuffer.allocate(1);
-            buffer.put(value);
-            device.write(register.getValue(),1,buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            // Close device
-            if (device != null) {
-                try {
-                    device.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-        }
-    }
-
-    private byte read(Device device, Registers register)
-    {
-        return read(device,register.getValue());
-    }
-
-    private byte read(Device deviceType,int address)
-    {
-        I2CDevice device = null;
-        try {
-            switch (deviceType)
-            {
-                case mpu9250:
-                    device = DeviceManager.open(mpu9250);
-                    break;
-                case ak8963:
-                    device = DeviceManager.open(ak8963);
-                    break;
-                default:
-                    return 0;
-            }
-            ByteBuffer buffer = ByteBuffer.allocate(1);
-            device.read(address,buffer);
-            return buffer.get();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            // Close device
-            if (device != null) {
-                try {
-                    device.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-        }
-        return 0;
-    }
-
-    private byte[] read(Device device, Registers register, int length)
-    {
-        return read(device,register.getValue(),length);
-    }
-    private byte[] read(Device deviceType, int address, int length)
-    {
-        I2CDevice device = null;
-        try {
-            switch (deviceType)
-            {
-                case mpu9250:
-                    device = DeviceManager.open(mpu9250);
-                    break;
-                case ak8963:
-                    device = DeviceManager.open(ak8963);
-                    break;
-                default:
-                    return new byte[0];
-            }
-            ByteBuffer buffer = ByteBuffer.allocate(length);
-            device.read(address,buffer);
-            return buffer.array();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            // Close device
-            if (device != null) {
-                try {
-                    device.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-        }
-        return new byte[0];
-    }
-
+    
     public void registerInterest(SensorUpdateListener listener)
     {
     	listeners.add(listener);
+    }
+
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 3];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 3] = hexArray[v >>> 4];
+            hexChars[j * 3 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3 + 2] = ' ';
+        }
+        return new String(hexChars);
     }
 }

@@ -1,7 +1,6 @@
 
 
 import com.pi4j.io.i2c.I2CFactory;
-import sensors.MPU9250.MPU9250;
 import sensors.MPU9250.MPU9250_Oracle;
 
 import java.io.IOException;
