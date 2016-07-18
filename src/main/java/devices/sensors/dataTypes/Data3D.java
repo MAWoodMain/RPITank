@@ -55,7 +55,7 @@ public class Data3D {
 
 	public String toString()
 	{
-		String format = "%+04.3f";
+		final String format = "%+04.3f";
 		return 	" x: " + String.format(format,x) +
 				" y: " + String.format(format,y) +
 				" z: " + String.format(format,z);

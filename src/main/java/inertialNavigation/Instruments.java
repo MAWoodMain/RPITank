@@ -9,7 +9,7 @@ import devices.sensors.dataTypes.TimestampedData3D;
 public class Instruments {
 	
 	//Fused  data from several sensors
-	private static float yaw = 0; //Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
+	private static float yaw = 0; //Yaw is the angle between SensorPackage x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
 	private static float pitch = 0; //Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
 	private static float roll = 0; //Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.
 	
@@ -115,7 +115,7 @@ public class Instruments {
 	 * <p>
 	 * these are Tait-Bryan angles, commonly used in aircraft orientation.
 	 * In this coordinate system, the positive z-axis is down toward Earth.
-	 * Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination,
+	 * Yaw is the angle between SensorPackage x-axis and Earth magnetic North (or true North if corrected for local declination,
 	 * looking down on the sensor positive yaw is counterclockwise.
 	 * Pitch is angle between sensor x-axis and Earth ground plane, toward the Earth is positive, up toward the sky is negative.
 	 * Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positive roll.

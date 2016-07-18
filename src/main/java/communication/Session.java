@@ -38,7 +38,7 @@ public class Session implements Runnable
                     communicationPhase.run();
                 }
             }
+            Thread.currentThread().interrupt();
         }
-        Thread.currentThread().interrupt();
     }
 }

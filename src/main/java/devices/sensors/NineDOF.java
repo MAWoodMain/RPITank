@@ -7,7 +7,7 @@ import devices.sensors.interfaces.*;
 /**
  * Created by MAWood on 17/07/2016.
  */
-public abstract class NineDOF extends Sensor implements Accelerometer, Gyroscope, Magnetometer, Thermometer
+public abstract class NineDOF extends SensorPackage implements Accelerometer, Gyroscope, Magnetometer, Thermometer
 {
 
     protected final CircularArrayRing<TimestampedData3D> acc;

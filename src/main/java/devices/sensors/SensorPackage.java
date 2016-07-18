@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /**
  * Created by MAWood on 17/07/2016.
  */
-public abstract class Sensor implements Runnable
+public abstract class SensorPackage implements Runnable
 {
 
     private final int sampleRate;
@@ -16,7 +16,7 @@ public abstract class Sensor implements Runnable
 
     private ArrayList<SensorUpdateListener> listeners;
 
-    Sensor(int sampleRate)
+    SensorPackage(int sampleRate)
     {
         this.sampleRate = sampleRate;
 

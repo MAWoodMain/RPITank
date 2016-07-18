@@ -42,28 +42,18 @@ public class TimestampedData3D extends Data3D
 
     public static TimestampedData3D integrate(TimestampedData3D sampleT, TimestampedData3D sampleTm1 )
     {
-        float deltaT = (float)(sampleT.nanoTime-sampleTm1.nanoTime)/(float)TimestampedData3D.NANOS_PER_SEC; // time difference between samples in seconds
+        final float deltaT = (float)(sampleT.nanoTime-sampleTm1.nanoTime)/(float)TimestampedData3D.NANOS_PER_SEC; // time difference between samples in seconds
 
-        TimestampedData3D integral = new TimestampedData3D(sampleT); // preserve timestamp in result
-
-        integral.setX((sampleT.getX()+sampleTm1.getX())/2f*deltaT);  //Trapezoidal area, average height X deltaT
-        integral.setY((sampleT.getY()+sampleTm1.getY())/2f*deltaT);
-        integral.setZ((sampleT.getZ()+sampleTm1.getZ())/2f*deltaT);
-
-        return integral;
+        return new TimestampedData3D(
+                (sampleT.getX()+sampleTm1.getX())/2f*deltaT,//Trapezoidal area, average height X deltaT
+                (sampleT.getY()+sampleTm1.getY())/2f*deltaT,//Trapezoidal area, average height Y deltaT
+                (sampleT.getZ()+sampleTm1.getZ())/2f*deltaT,//Trapezoidal area, average height Z deltaT
+                sampleT.nanoTime); // preserve timestamp in result
     }
 
     public TimestampedData3D integrate(TimestampedData3D sampleTm1 )
     {
-        float deltaT = (float)(this.nanoTime-sampleTm1.nanoTime)/(float)TimestampedData3D.NANOS_PER_SEC; // time difference between samples in seconds
-
-        TimestampedData3D integral = new TimestampedData3D(this); // preserve timestamp in result
-
-        integral.setX((this.getX()+sampleTm1.getX())/2f*deltaT);  //Trapezoidal area, average height X deltaT
-        integral.setY((this.getY()+sampleTm1.getY())/2f*deltaT);
-        integral.setZ((this.getZ()+sampleTm1.getZ())/2f*deltaT);
-
-        return integral;
+        return integrate(sampleTm1,this);
     }
 
 }
