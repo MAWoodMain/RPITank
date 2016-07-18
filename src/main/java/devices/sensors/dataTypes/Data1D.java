@@ -6,7 +6,7 @@ package devices.sensors.dataTypes;
  */
 public class Data1D
 {
-    private float x;
+    protected float x;
 
     public Data1D(float x) {
         this.x = x;
@@ -23,6 +23,6 @@ public class Data1D
     public String toString()
     {
         final String format = "%+04.3f";
-        return 	String.format(format,x);
+        return 	"x: " + String.format(format,x);
     }
 }

@@ -4,37 +4,18 @@ package devices.sensors.dataTypes;
  * RPITank - sensors
  * Created by matthew on 10/07/16.
  */
-public class Data3D {
+public class Data3D extends Data2D{
 
-	private float x;
-    private float y;
     private float z;
 
     public Data3D(float x, float y, float z) {
-        this.x = x;
-        this.y = y;
+    	super(x,y);
         this.z = z;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
     }
 
     public float getZ() {
         return z;
     }
-
-	public void setX(float x) {
-		this.x = x;
-	}
-
-	public void setY(float y) {
-		this.y = y;
-	}
 
 	public void setZ(float z) {
 		this.z = z;
@@ -56,8 +37,6 @@ public class Data3D {
 	public String toString()
 	{
 		final String format = "%+04.3f";
-		return 	" x: " + String.format(format,x) +
-				" y: " + String.format(format,y) +
-				" z: " + String.format(format,z);
+		return 	super.toString() + " z: " + String.format(format,z);
 	}
 }
