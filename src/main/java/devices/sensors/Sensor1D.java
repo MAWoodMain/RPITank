@@ -20,6 +20,8 @@ public abstract class Sensor1D
         rawVals = new CircularArrayRing<>();
         valBias = 0;
         valScaling = 1;
+        unitCorrectionOffset = 0;
+        unitCorrectionScale = 1;
     }
 
     public TimestampedData1D getLatestValue()
