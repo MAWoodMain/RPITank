@@ -3,6 +3,12 @@ package inertialNavigation;
 import devices.sensors.dataTypes.Data3D;
 import devices.sensors.dataTypes.TimestampedData3D;
 
+/**
+ * SensorFusion
+ * @author GJWood
+ * ported to Java from the C++ implementation of the Madgwick and Mahoney filter algorithms by Kris Winer see
+ * https://github.com/kriswiner/MPU-9250/blob/master/quaternionFilters.ino
+ */
 public class SensorFusion {
 
 	private static final float[] eInt = new float[]{0,0,0}; // vector to hold integral error for Mahony method
@@ -50,18 +56,6 @@ public class SensorFusion {
 
 	
 	
-	// Implementation of Sebastian Madgwick's
-	// "...efficient orientation filter for... inertial/magnetic sensor arrays"
-	// (see http://www.x-io.co.uk/category/open-source/ for examples and more
-	// details)
-	// which fuses acceleration, rotation rate, and magnetic moments to produce
-	// a quaternion-based estimate of absolute
-	// device orientation -- which can be converted to yaw, pitch, and roll.
-	// Useful for stabilizing quadcopters, etc.
-	// The performance of the orientation filter is at least as good as
-	// conventional Kalman-based filtering algorithms
-	// but is much less computationally intensive---it can be performed on a 3.3
-	// V Pro Mini operating at 8 MHz!
 
 	public float[] geteInt() {
 		return eInt;
@@ -96,7 +90,22 @@ public class SensorFusion {
 		return KI;
 	}
 
-	
+	/**
+	 * Update Madgewick Quaternion
+	 * @param acc - accelerometer reading
+	 * @param grav - gyrometer reading 
+	 * @param mag -  magenetometer reading
+	 * @param deltat - time interval between readings in seconds
+	 * 
+	 * Implementation of Sebastian Madgwick's efficient orientation filter for inertial/magnetic sensor arrays
+	 * (see http://www.x-io.co.uk/category/open-source/ for examples and more details)
+	 * which fuses acceleration, rotation rate, and magnetic moments to produce
+	 * a quaternion-based estimate of absolute device orientation 
+	 * which can be converted to yaw, pitch, and roll. Useful for stabilizing quadcopters, etc.
+	 * The performance of the orientation filter is at least as good as
+	 * conventional Kalman-based filtering algorithms but is much less computationally intensive
+	 * it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
+	 */
 	public static void MadgwickQuaternionUpdate(TimestampedData3D acc, TimestampedData3D grav, TimestampedData3D mag, float deltat) //delta t in seconds
 
 	{
@@ -203,15 +212,32 @@ public class SensorFusion {
 		q2 += qDot2 * deltat;
 		q3 += qDot3 * deltat;
 		q4 += qDot4 * deltat;
+		
 		q.setAll(q1, q2, q3, q4);
 		q.normalize();// Normalise quaternion
 		Instruments.updateYawPitchRoll(q);
 
 	}
 
-	// Similar to Madgwick scheme but uses proportional and integral filtering
-	// on the error between estimated reference vectors and
-	// measured ones.
+	
+	/**
+	 * Update Mahoney Quaternion
+	 * @param acc - accelerometer reading
+	 * @param grav - gyrometer reading 
+	 * @param mag -  magenetometer reading
+	 * @param deltat - time interval between readings in seconds
+	 * 
+	 * Implementation of Mahoney's efficient orientation filter for inertial/magnetic sensor arrays
+	 * (see http://www.x-io.co.uk/category/open-source/ for examples and more details)
+	 * which fuses acceleration, rotation rate, and magnetic moments to produce
+	 * a quaternion-based estimate of absolute device orientation 
+	 * which can be converted to yaw, pitch, and roll. Useful for stabilizing quadcopters, etc.
+	 * Similar to Madgwick scheme but uses proportional and integral filtering
+	 * on the error between estimated reference vectors and measured ones.
+	 * The performance of the orientation filter is at least as good as
+	 * conventional Kalman-based filtering algorithms but is much less computationally intensive
+	 * it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
+	 */
 	public static void MahonyQuaternionUpdate(Data3D acc, Data3D grav, Data3D mag, float deltat) //delta t in seconds
 
 	{
