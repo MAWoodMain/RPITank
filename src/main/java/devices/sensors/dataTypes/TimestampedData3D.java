@@ -54,4 +54,9 @@ public class TimestampedData3D extends Data3D
         return integrate(sampleTm1,this);
     }
 
+    public TimestampedData3D clone()
+    {
+        return new TimestampedData3D(x,y,z,nanoTime);
+    }
+
 }

@@ -9,30 +9,44 @@ import devices.sensors.dataTypes.TimestampedData1D;
  */
 public abstract class Sensor1D
 {
-    protected final CircularArrayRing<TimestampedData1D> vals;
-    protected float valBias;
-    protected float valScaling;
+    private final CircularArrayRing<TimestampedData1D> rawVals;
+    private float valBias;
+    private float valScaling;
+    private float unitCorrectionScale;
+    private float unitCorrectionOffset;
 
     public Sensor1D()
     {
-        vals = new CircularArrayRing<>();
+        rawVals = new CircularArrayRing<>();
         valBias = 0;
         valScaling = 1;
+        unitCorrectionOffset = 0;
+        unitCorrectionScale = 1;
     }
 
     public TimestampedData1D getLatestValue()
     {
-        return vals.get(0);
+        return this.getValue(0);
     }
 
     public TimestampedData1D getValue(int i)
     {
-        return vals.get(i);
+        TimestampedData1D actual = rawVals.get(i).clone();
+        actual.scale(valScaling);
+        actual.offset(valBias);
+        actual.scale(unitCorrectionScale);
+        actual.offset(unitCorrectionOffset);
+        return actual;
+    }
+
+    protected void addValue(TimestampedData1D value)
+    {
+        rawVals.add(value);
     }
 
     public int getReadingCount()
     {
-        return vals.size();
+        return rawVals.size();
     }
 
     public void setValBias(float valBias)
@@ -45,10 +59,33 @@ public abstract class Sensor1D
         this.valScaling = valScaling;
     }
 
-    protected void addValue(TimestampedData1D value)
+    public float getValBias()
     {
-        value.scale(valScaling);
-        value.offset(valBias);
-        vals.add(value);
+        return valBias;
+    }
+
+    public float getValScaling()
+    {
+        return valScaling;
+    }
+
+    public float getUnitCorrectionScale()
+    {
+        return unitCorrectionScale;
+    }
+
+    public void setUnitCorrectionScale(float unitCorrectionScale)
+    {
+        this.unitCorrectionScale = unitCorrectionScale;
+    }
+
+    public float getUnitCorrectionOffset()
+    {
+        return unitCorrectionOffset;
+    }
+
+    public void setUnitCorrectionOffset(float unitCorrectionOffset)
+    {
+        this.unitCorrectionOffset = unitCorrectionOffset;
     }
 }
