@@ -6,9 +6,9 @@ package devices.sensors.dataTypes;
  */
 public abstract class Sensor2D extends Sensor1D
 {
-    protected final CircularArrayRing<Data1D> rawYVals;
-    protected float yBias;
-    protected float yScaling;
+    final CircularArrayRing<Data1D> rawYVals;
+    float yBias;
+    float yScaling;
 
     public Sensor2D()
     {
@@ -56,4 +56,13 @@ public abstract class Sensor2D extends Sensor1D
         rawYVals.add(new Data1D(value.getY()));
     }
 
+    public void setyBias(float yBias)
+    {
+        this.yBias = yBias;
+    }
+
+    public void setyScaling(float yScaling)
+    {
+        this.yScaling = yScaling;
+    }
 }

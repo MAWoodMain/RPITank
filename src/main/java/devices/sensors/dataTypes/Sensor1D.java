@@ -6,11 +6,11 @@ package devices.sensors.dataTypes;
  */
 public abstract class Sensor1D
 {
-    protected final CircularArrayRing<TimestampedData1D> rawXVals;
-    protected float xBias;
-    protected float xScaling;
-    protected float unitCorrectionScale;
-    protected float unitCorrectionOffset;
+    final CircularArrayRing<TimestampedData1D> rawXVals;
+    float xBias;
+    float xScaling;
+    float unitCorrectionScale;
+    float unitCorrectionOffset;
 
     public Sensor1D()
     {
