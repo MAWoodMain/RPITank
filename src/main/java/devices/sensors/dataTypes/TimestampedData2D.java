@@ -52,4 +52,9 @@ public class TimestampedData2D extends Data2D
     {
         return integrate(sampleTm1,this);
     }
+
+    public TimestampedData2D clone()
+    {
+        return new TimestampedData2D(x,y,nanoTime);
+    }
 }

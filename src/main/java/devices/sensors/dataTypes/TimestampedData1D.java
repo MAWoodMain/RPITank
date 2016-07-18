@@ -45,4 +45,9 @@ public class TimestampedData1D extends Data1D
     {
         return integrate(this,sampleTm1);
     }
+
+    public TimestampedData1D clone()
+    {
+        return new TimestampedData1D(x,nanoTime);
+    }
 }

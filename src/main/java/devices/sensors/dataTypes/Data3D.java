@@ -6,7 +6,7 @@ package devices.sensors.dataTypes;
  */
 public class Data3D extends Data2D{
 
-    private float z;
+    protected float z;
 
     public Data3D(float x, float y, float z) {
     	super(x,y);
