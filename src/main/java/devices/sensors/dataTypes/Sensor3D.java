@@ -6,13 +6,14 @@ package devices.sensors.dataTypes;
  */
 public abstract class Sensor3D extends Sensor2D
 {
-    private final CircularArrayRing<Data1D> rawZVals;
+    protected final CircularArrayRing<Data1D> rawZVals;
     private float zBias;
     private float zScaling;
 
-    public Sensor3D()
+    public Sensor3D(int sampleRate, int sampleSize)
     {
-        rawZVals = new CircularArrayRing<>();
+        super(sampleRate,sampleSize);
+        rawZVals = new CircularArrayRing<>(sampleSize);
         zBias = 0;
         zScaling = 1;
     }
@@ -66,5 +67,15 @@ public abstract class Sensor3D extends Sensor2D
     public void setzScaling(float zScaling)
     {
         this.zScaling = zScaling;
+    }
+
+    public float getzBias()
+    {
+        return zBias;
+    }
+
+    public float getzScaling()
+    {
+        return zScaling;
     }
 }
