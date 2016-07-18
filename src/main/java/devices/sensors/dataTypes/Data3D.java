@@ -51,4 +51,8 @@ public class Data3D extends Data2D{
 		final String format = "%+04.3f";
 		return 	super.toString() + " z: " + String.format(format,z);
 	}
+    public Data3D clone()
+    {
+        return new Data3D(x,y,z);
+    }
 }
