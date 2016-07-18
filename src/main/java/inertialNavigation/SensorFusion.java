@@ -1,8 +1,7 @@
 package inertialNavigation;
 
-import sensors.dataTypes.Data3D;
-import sensors.dataTypes.Quaternion;
-import sensors.dataTypes.TimestampedData3D;
+import devices.sensors.dataTypes.Data3D;
+import devices.sensors.dataTypes.TimestampedData3D;
 
 /**
  * SensorFusion
@@ -45,7 +44,7 @@ public class SensorFusion {
     // The 3.3 V 8 MHz Pro Mini is doing pretty well!
 	
 	// Examples of calling the filters, READ BEFORE USING!!		!!!
-	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
+	// sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
 	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
 	// We have to make some allowance for this orientation mismatch in feeding the output to the quaternion filter.
 	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like

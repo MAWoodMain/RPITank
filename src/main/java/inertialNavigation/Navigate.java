@@ -5,12 +5,12 @@ import java.io.IOException;
 import com.pi4j.io.i2c.I2CFactory;
 import com.pi4j.io.i2c.I2CFactory.UnsupportedBusNumberException;
 
-import sensors.MPU9250.MPU9250;
-import sensors.interfaces.Accelerometer;
-import sensors.interfaces.Gyroscope;
-import sensors.interfaces.Magnetometer;
-import sensors.interfaces.SensorUpdateListener;
-import sensors.dataTypes.*;
+import devices.sensorImplimentations.MPU9250.MPU9250_Pi4j;
+import devices.sensors.interfaces.Accelerometer;
+import devices.sensors.interfaces.Gyroscope;
+import devices.sensors.interfaces.Magnetometer;
+import devices.sensors.interfaces.SensorUpdateListener;
+import devices.sensors.dataTypes.*;
 
 
 public class Navigate implements Runnable, SensorUpdateListener{
@@ -34,7 +34,7 @@ public class Navigate implements Runnable, SensorUpdateListener{
 	{
 		dataReady  = false;
 		try {
-			MPU9250 mpu9250  = new MPU9250(SAMPLE_RATE, SAMPLE_SIZE); //sample at 100 Hertz
+			MPU9250_Pi4j mpu9250  = new MPU9250_Pi4j(SAMPLE_RATE, SAMPLE_SIZE); //sample at 100 Hertz
 			mpu9250.registerInterest(this);
 			new Thread(mpu9250).start();
 			acc = mpu9250;
@@ -62,10 +62,9 @@ public class Navigate implements Runnable, SensorUpdateListener{
             	Instruments.setMagnetometer( mag.getLatestGaussianData());
                 Instruments.setAccelerometer(acc.getLatestAcceleration());
                 Instruments.setGyroscope(gyr.getLatestRotationalAcceleration());
-                Instruments.setHeading(mag.getHeading());
                 
             	// Examples of calling the filters, READ BEFORE USING!!		!!!
-            	// Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
+            	// sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of the magnetometer;
             	// the magnetometer z-axis (+ down) is opposite to z-axis (+ up) of accelerometer and gyro!
             	// We have to make some allowance for this orientation mismatch in feeding the output to the quaternion filter.
             	// For the MPU-9250, we have chosen a magnetic rotation that keeps the sensor forward along the x-axis just like
@@ -87,7 +86,6 @@ public class Navigate implements Runnable, SensorUpdateListener{
                 System.out.print(  "gyr: " + Instruments.getGyroscope().toString());
                 System.out.println("mag: " + Instruments.getMagnetometer().toString());
                 System.out.println("Yaw,Pirch & Roll: " + Instruments.getAngles().toString());
-                System.out.println(mag.getHeading());
 
                 Thread.sleep(1);
             } catch (InterruptedException e)
