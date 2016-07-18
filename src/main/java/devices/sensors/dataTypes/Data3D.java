@@ -21,7 +21,19 @@ public class Data3D extends Data2D{
 		this.z = z;
 	}
 
-	public void normalize(){
+    public void scale(float xScale,float yScale,float zScale)
+    {
+        super.scale(xScale,yScale);
+        z *= zScale;
+    }
+
+    public void offset(float xOffset,float yOffset,float zOffset)
+    {
+        super.offset(xOffset,yOffset);
+        z += zOffset;
+    }
+
+    public void normalize(){
 		float norm;
 		// Normalise measurements
 		norm = (float)Math.sqrt(x*x + y*y + z*z);

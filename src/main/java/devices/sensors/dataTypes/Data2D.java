@@ -24,6 +24,18 @@ public class Data2D extends Data1D
         this.y = y;
     }
 
+    public void scale(float xScale,float yScale)
+    {
+        super.scale(xScale);
+        y *= yScale;
+    }
+
+    public void offset(float xOffset,float yOffset)
+    {
+        super.offset(xOffset);
+        y += yOffset;
+    }
+
     public String toString()
     {
         final String format = "%+04.3f";

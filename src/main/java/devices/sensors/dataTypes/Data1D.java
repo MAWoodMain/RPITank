@@ -20,6 +20,16 @@ public class Data1D
         this.x = x;
     }
 
+    public void scale(float xScale)
+    {
+        x *= xScale;
+    }
+
+    public void offset(float xOffset)
+    {
+        x += xOffset;
+    }
+
     public String toString()
     {
         final String format = "%+04.3f";
