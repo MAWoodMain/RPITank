@@ -41,4 +41,8 @@ public class Data2D extends Data1D
         final String format = "%+04.3f";
         return 	super.toString() + " y: " + String.format(format,y);
     }
+    public Data2D clone()
+    {
+        return new Data2D(x,y);
+    }
 }

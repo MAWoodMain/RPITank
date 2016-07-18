@@ -35,4 +35,8 @@ public class Data1D
         final String format = "%+04.3f";
         return 	"x: " + String.format(format,x);
     }
+    public Data1D clone()
+    {
+        return new Data1D(x);
+    }
 }

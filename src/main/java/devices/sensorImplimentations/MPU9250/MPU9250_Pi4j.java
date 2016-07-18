@@ -331,12 +331,12 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         // Apparently this is not working for the acceleration biases in the MPU-9250
         // Are we handling the temperature correction bit properly?
         // Push accelerometer biases to hardware registers
-        /*mpu9250.write(XA_OFFSET_H.getValue(), buffer[0]);
-        mpu9250.write(XA_OFFSET_L.getValue(), buffer[1]);
-        mpu9250.write(YA_OFFSET_H.getValue(), buffer[2]);
-        mpu9250.write(YA_OFFSET_L.getValue(), buffer[3]);
-        mpu9250.write(ZA_OFFSET_H.getValue(), buffer[4]);
-        mpu9250.write(ZA_OFFSET_L.getValue(), buffer[5]);
+        /*mpu9250.write(XA_OFFSET_H.getX(), buffer[0]);
+        mpu9250.write(XA_OFFSET_L.getX(), buffer[1]);
+        mpu9250.write(YA_OFFSET_H.getX(), buffer[2]);
+        mpu9250.write(YA_OFFSET_L.getX(), buffer[3]);
+        mpu9250.write(ZA_OFFSET_H.getX(), buffer[4]);
+        mpu9250.write(ZA_OFFSET_L.getX(), buffer[5]);
         */
 
 
@@ -363,13 +363,13 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         mpu9250.write(Registers.CONFIG.getValue(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
         Thread.sleep(2);
         // Set full scale range for the gyro to 250 dps
-        mpu9250.write(Registers.GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getValue());
+        mpu9250.write(Registers.GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getX());
         Thread.sleep(2);
         // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         mpu9250.write(Registers.ACCEL_CONFIG2.getValue(),(byte)0x02);
         Thread.sleep(2);
         // Set full scale range for the accelerometer to 2 g
-        mpu9250.write(Registers.ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccScale.AFS_2G.getValue());
+        mpu9250.write(Registers.ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccScale.AFS_2G.getX());
         Thread.sleep(2);
 
         final int TEST_LENGTH = 200;

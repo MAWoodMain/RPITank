@@ -333,12 +333,12 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // Apparently this is not working for the acceleration biases in the MPU-9250
         // Are we handling the temperature correction bit properly?
         // Push accelerometer biases to hardware registers
-        /*write(Device.mpu9250,XA_OFFSET_H.getValue(), buffer[0]);
-        write(Device.mpu9250,XA_OFFSET_L.getValue(), buffer[1]);
-        write(Device.mpu9250,YA_OFFSET_H.getValue(), buffer[2]);
-        write(Device.mpu9250,YA_OFFSET_L.getValue(), buffer[3]);
-        write(Device.mpu9250,ZA_OFFSET_H.getValue(), buffer[4]);
-        write(Device.mpu9250,ZA_OFFSET_L.getValue(), buffer[5]);
+        /*write(Device.mpu9250,XA_OFFSET_H.getX(), buffer[0]);
+        write(Device.mpu9250,XA_OFFSET_L.getX(), buffer[1]);
+        write(Device.mpu9250,YA_OFFSET_H.getX(), buffer[2]);
+        write(Device.mpu9250,YA_OFFSET_L.getX(), buffer[3]);
+        write(Device.mpu9250,ZA_OFFSET_H.getX(), buffer[4]);
+        write(Device.mpu9250,ZA_OFFSET_L.getX(), buffer[5]);
         */
 
 
@@ -457,9 +457,9 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
                     short x = -110;
                     short y = 100;
                     short z = 100;
-                    //write(Device.mpu9250,XA_OFFSET_H.getValue(), intToByteArray(x));
-                    //write(Device.mpu9250,YA_OFFSET_H.getValue(), intToByteArray(y));
-                    //write(Device.mpu9250,ZA_OFFSET_H.getValue(), intToByteArray(z));
+                    //write(Device.mpu9250,XA_OFFSET_H.getX(), intToByteArray(x));
+                    //write(Device.mpu9250,YA_OFFSET_H.getX(), intToByteArray(y));
+                    //write(Device.mpu9250,ZA_OFFSET_H.getX(), intToByteArray(z));
                     Thread.sleep(100);
 
 
