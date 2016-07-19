@@ -16,17 +16,17 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     protected final CircularArrayRing<TimestampedData3D> acc;
     protected final CircularArrayRing<TimestampedData3D> gyr;
     protected final CircularArrayRing<TimestampedData3D> mag;
-    protected final CircularArrayRing<Float> tmp;
+    protected final CircularArrayRing<Float> therm;
 
     protected float[] accBias;
     protected float[] gyrBias;
     protected float[] magBias;
-    protected float tmpBias;
+    protected float thermBias;
 
     protected float[] accScaling;
     protected float[] gyrScaling;
     protected float[] magScaling;
-    protected float tmpScaling;
+    protected float thermScaling;
 
     protected NineDOF(int sampleRate, int sampleSize)
     {
@@ -35,17 +35,17 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
         acc = new CircularArrayRing<>(sampleSize);
         gyr = new CircularArrayRing<>(sampleSize);
         mag = new CircularArrayRing<>(sampleSize);
-        tmp = new CircularArrayRing<>(sampleSize);
+        therm = new CircularArrayRing<>(sampleSize);
 
         accBias = new float[]{0,0,0};
         gyrBias = new float[]{0,0,0};
         magBias = new float[]{0,0,0};
-        tmpBias = 0f;
+        thermBias = 0f;
 
         accScaling = new float[]{1,1,1};
         gyrScaling = new float[]{1,1,1};
         magScaling = new float[]{1,1,1};
-        tmpScaling = 1f;
+        thermScaling = 1f;
     }
 
 
@@ -58,13 +58,13 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     @Override
     public float getTemperature(int i)
     {
-        return tmp.get(i);
+        return therm.get(i);
     }
 
     @Override
     public int getThermometerReadingCount()
     {
-        return tmp.size();
+        return therm.size();
     }
 
     @Override
