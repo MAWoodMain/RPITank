@@ -40,7 +40,7 @@ public class MPU9250 extends NineDOF
     private void selfTest() throws IOException, InterruptedException
     {
 
-        byte FS = 0;
+        byte FS = 0; 
         //int bytesRead =0;
 
         mpu9250.write(Registers.SMPLRT_DIV.getValue(),(byte)0x00); // Set gyro sample rate to 1 kHz
@@ -358,8 +358,8 @@ public class MPU9250 extends NineDOF
         // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
         // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips
         // can join the I2C bus and all can be controlled by the Arduino as master
-        //   writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22);
-        mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
+        //mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
+        mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
         mpu9250.write(Registers.INT_ENABLE.getValue(), (byte)0x01);  // Enable data ready (bit 0) interrupt
         Thread.sleep(100);
     }
