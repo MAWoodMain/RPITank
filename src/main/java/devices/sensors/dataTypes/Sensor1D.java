@@ -1,20 +1,36 @@
 package devices.sensors.dataTypes;
 
+import devices.sensors.interfaces.SensorUpdateListener;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
 /**
  * RPITank - devices.sensors
  * Created by MAWood on 18/07/2016.
  */
-public abstract class Sensor1D
+public abstract class Sensor1D implements Runnable
 {
     protected final CircularArrayRing<TimestampedData1D> rawXVals;
-    protected float xBias;
-    protected float xScaling;
-    protected float unitCorrectionScale;
-    protected float unitCorrectionOffset;
+    float xBias;
+    float xScaling;
+    float unitCorrectionScale;
+    float unitCorrectionOffset;
 
-    public Sensor1D()
+
+    private final int sampleRate;
+
+    private boolean paused;
+
+    private ArrayList<SensorUpdateListener> listeners;
+
+    public Sensor1D(int sampleRate, int sampleSize)
     {
-        rawXVals = new CircularArrayRing<>();
+        this.sampleRate = sampleRate;
+        listeners = new ArrayList<>();
+        paused = false;
+
+        rawXVals = new CircularArrayRing<>(sampleSize);
         xBias = 0;
         xScaling = 1;
         unitCorrectionOffset = 0;
@@ -35,6 +51,35 @@ public abstract class Sensor1D
         actual.offset(unitCorrectionOffset);
         return actual;
     }
+
+
+    @Override
+    public void run()
+    {
+        long lastTime;
+        final long waitTime = 1000000000L /sampleRate;
+        while(!Thread.interrupted())
+        {
+            if(!paused)
+            {
+                try
+                {
+                    lastTime = System.nanoTime();
+                    updateData();
+                    Thread.sleep(100);
+
+
+                    for(SensorUpdateListener listener:listeners) listener.dataUpdated();
+
+                    while(System.nanoTime() - lastTime < waitTime);
+                } catch (Exception ignored)
+                {
+                }
+            }
+        }
+    }
+
+    protected abstract void updateData() throws IOException;
 
     protected void addValue(TimestampedData1D value)
     {
@@ -59,5 +104,30 @@ public abstract class Sensor1D
     protected void setUnitCorrectionOffset(float unitCorrectionOffset)
     {
         this.unitCorrectionOffset = unitCorrectionOffset;
+    }
+
+    public float getxBias()
+    {
+        return xBias;
+    }
+
+    public float getxScaling()
+    {
+        return xScaling;
+    }
+
+    public void pause()
+    {
+        paused = true;
+    }
+
+    public void unpause()
+    {
+        paused = false;
+    }
+
+    public void registerInterest(SensorUpdateListener listener)
+    {
+        listeners.add(listener);
     }
 }

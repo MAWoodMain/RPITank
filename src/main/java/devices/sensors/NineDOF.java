@@ -2,7 +2,10 @@ package devices.sensors;
 
 import devices.sensors.dataTypes.CircularArrayRing;
 import devices.sensors.dataTypes.TimestampedData3D;
-import devices.sensors.interfaces.*;
+import devices.sensors.interfaces.Accelerometer;
+import devices.sensors.interfaces.Gyroscope;
+import devices.sensors.interfaces.Magnetometer;
+import devices.sensors.interfaces.Thermometer;
 
 /**
  * Created by MAWood on 17/07/2016.
