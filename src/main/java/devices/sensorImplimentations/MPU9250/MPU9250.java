@@ -16,9 +16,9 @@ public class MPU9250 extends NineDOF
     private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
     private static final MagScale magScale = MagScale.MFS_16BIT;
 
-    private int lastRawMagX;
-    private int lastRawMagY;
-    private int lastRawMagZ;
+    private short lastRawMagX;
+    private short lastRawMagY;
+    private short lastRawMagZ;
 
     private final I2CImplementation mpu9250;
     private final I2CImplementation ak8963;
@@ -500,16 +500,16 @@ public class MPU9250 extends NineDOF
     @Override
     public void updateMagnetometerData() throws IOException
     {
-        int newMagData = (ak8963.read(Registers.AK8963_ST1.getValue()) & 0x01);
+        byte newMagData = (byte) (ak8963.read(Registers.AK8963_ST1.getValue()) & 0x01);
         if (newMagData == 0) return;
         byte[] buffer = ak8963.read(Registers.AK8963_ST1.getValue(), 7);
 
         byte c = buffer[6];
         if((c & 0x08) == 0)
         { // Check if magnetic sensor overflow set, if not then report data
-            lastRawMagX = (buffer[1] << 8) | buffer[0];
-            lastRawMagY = (buffer[3] << 8) | buffer[2];
-            lastRawMagZ = (buffer[5] << 8) | buffer[4];
+            lastRawMagX = (short) ((buffer[1] << 8) | buffer[0]); // Turn the MSB and LSB into a signed 16-bit value
+            lastRawMagY = (short) ((buffer[3] << 8) | buffer[2]); // Data stored as little Endian
+            lastRawMagZ = (short) ((buffer[5] << 8) | buffer[4]);
             float x=lastRawMagX,y=lastRawMagY,z=lastRawMagZ;
 
             x *= magScale.getRes()* magScaling[0];
@@ -534,5 +534,3 @@ public class MPU9250 extends NineDOF
     }
 
 }
-
-
