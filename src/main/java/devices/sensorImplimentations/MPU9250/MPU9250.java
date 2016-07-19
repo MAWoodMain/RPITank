@@ -41,7 +41,7 @@ public class MPU9250 extends NineDOF
     {
 
         byte FS = 0;
-        int bytesRead =0;
+        //int bytesRead =0;
 
         mpu9250.write(Registers.SMPLRT_DIV.getValue(),(byte)0x00); // Set gyro sample rate to 1 kHz
         Thread.sleep(2);
@@ -60,7 +60,7 @@ public class MPU9250 extends NineDOF
         final int TEST_LENGTH = 200;
         byte[] buffer = new byte[]{0,0,0,0,0,0};
 
-        short[] aAvg = new short[3];
+        short[] aAvg = new short[3]; //16 bit integer to match registers
         short[] gAvg = new short[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
@@ -91,8 +91,8 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.GYRO_CONFIG.getValue(), (byte)0xE0);
         Thread.sleep(2);
 
-        int[] aSTAvg = new int[3];
-        int[] gSTAvg = new int[3];
+        short[] aSTAvg = new short[3]; //16 bit integer to match registers
+        short[] gSTAvg = new short[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
@@ -123,7 +123,7 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
         Thread.sleep(25);
 
-        int[] selfTest = new int[6];
+        byte[] selfTest = new byte[6];
 
         selfTest[0] = mpu9250.read(Registers.SELF_TEST_X_ACCEL.getValue());
         Thread.sleep(2);
@@ -189,8 +189,8 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.GYRO_CONFIG.getValue(),(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
         mpu9250.write(Registers.ACCEL_CONFIG.getValue(),(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
 
-        int gyrosensitivity = 131;     // = 131 LSB/degrees/sec
-        int accelSensitivity = 16384;  // = 16384 LSB/g
+        short gyrosensitivity = 131;     // = 131 LSB/degrees/sec
+        short accelSensitivity = 16384;  // = 16384 LSB/g
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
         mpu9250.write(Registers.USER_CTRL.getValue(),(byte) 0x40);   // Enable FIFO
@@ -200,10 +200,10 @@ public class MPU9250 extends NineDOF
         // At end of sample accumulation, turn off FIFO sensor read
         mpu9250.write(Registers.FIFO_EN.getValue(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
         byte[] buffer;
-        buffer = mpu9250.read(Registers.FIFO_COUNTH.getValue(),2); // read FIFO sample count
+        buffer = mpu9250.read(Registers.FIFO_COUNTH.getValue(),2); // read FIFO sample count high and low bytes, high first
 
-        int packetCount = (buffer[0] << 8) | buffer[1];
-        packetCount /= 12;
+        short packetCount = (short)((buffer[0] << 8) | buffer[1]);
+        int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
 
         buffer = new byte[12];
         int[] accelBiasl = new int[]{0,0,0};
@@ -211,7 +211,7 @@ public class MPU9250 extends NineDOF
 
         for(int s = 0; s < packetCount; s++)
         {
-            buffer = mpu9250.read(Registers.FIFO_R_W.getValue(),12); // read FIFO sample count
+            buffer = mpu9250.read(Registers.FIFO_R_W.getValue(),12); // read FIFO samples based on count
 
             accelBiasl[0] += (buffer[0] << 8) | buffer[1];
             accelBiasl[1] += (buffer[2] << 8) | buffer[3];
@@ -223,13 +223,13 @@ public class MPU9250 extends NineDOF
         }
 
 
-        accelBiasl[0] /= packetCount;
-        accelBiasl[1] /= packetCount;
-        accelBiasl[2] /= packetCount;
+        accelBiasl[0] /= sampleCount; //Average of the 12 samples
+        accelBiasl[1] /= sampleCount;
+        accelBiasl[2] /= sampleCount;
 
-        gyroBias[0] /= packetCount;
-        gyroBias[1] /= packetCount;
-        gyroBias[2] /= packetCount;
+        gyroBias[0] /= sampleCount;
+        gyroBias[1] /= sampleCount;
+        gyroBias[2] /= sampleCount;
 
         if(accelBiasl[2] > 0L) {accelBiasl[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
         else {accelBiasl[2] += accelSensitivity;}
