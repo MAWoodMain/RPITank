@@ -202,31 +202,37 @@ public class MPU9250 extends NineDOF
         byte[] buffer;
         buffer = mpu9250.read(Registers.FIFO_COUNTH.getValue(),2); // read FIFO sample count high and low bytes, high first
 
-        short packetCount = (short)((buffer[0] << 8) | buffer[1]);
+        int packetCount = ((buffer[0] << 8) | buffer[1]);
         int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
 
         buffer = new byte[12];
-        int[] accelBiasl = new int[]{0,0,0};
+        int[] accelBiasl = new int[]{0,0,0}; 
         int[] gyroBias = new int[]{0,0,0};
+        short[] tempAccelBias = new short[]{0,0,0}; 
+        short[] tempGyroBias = new short[]{0,0,0};
 
         for(int s = 0; s < packetCount; s++)
         {
             buffer = mpu9250.read(Registers.FIFO_R_W.getValue(),12); // read FIFO samples based on count
 
-            accelBiasl[0] += (buffer[0] << 8) | buffer[1];
-            accelBiasl[1] += (buffer[2] << 8) | buffer[3];
-            accelBiasl[2] += (buffer[4] << 8) | buffer[5];
-
-            gyroBias[0] += (buffer[6] << 8) | buffer[7];
-            gyroBias[1] += (buffer[8] << 8) | buffer[9];
-            gyroBias[2] += (buffer[10] << 8) | buffer[11];
+            tempAccelBias[0] = (short) ((buffer[0] << 8) | buffer[1]); //Signed 16 bit quantities
+            tempAccelBias[1] = (short) ((buffer[2] << 8) | buffer[3]);
+            tempAccelBias[2] = (short) ((buffer[4] << 8) | buffer[5]);
+            tempGyroBias[0] = (short) ((buffer[6] << 8) | buffer[7]);
+            tempGyroBias[1] = (short) ((buffer[8] << 8) | buffer[9]);
+            tempGyroBias[2] = (short) ((buffer[10] << 8) | buffer[11]);
+            
+            accelBiasl[0] += tempAccelBias[0]; //Signed 32 bit quantities
+            accelBiasl[1] += tempAccelBias[1];
+            accelBiasl[2] += tempAccelBias[2];
+            gyroBias[0] += tempGyroBias[0];
+            gyroBias[1] += tempGyroBias[1];
+            gyroBias[2] += tempGyroBias[2];
         }
 
-
-        accelBiasl[0] /= sampleCount; //Average of the 12 samples
+        accelBiasl[0] /= sampleCount; // Normalise sums to get average count biases
         accelBiasl[1] /= sampleCount;
         accelBiasl[2] /= sampleCount;
-
         gyroBias[0] /= sampleCount;
         gyroBias[1] /= sampleCount;
         gyroBias[2] /= sampleCount;
@@ -251,18 +257,30 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.YG_OFFSET_L.getValue(), buffer[3]);
         mpu9250.write(Registers.ZG_OFFSET_H.getValue(), buffer[4]);
         mpu9250.write(Registers.ZG_OFFSET_L.getValue(), buffer[5]);
+        /*
+         // Output scaled gyro biases for display in the main program
+  		dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity;  
+  		dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
+  		dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
+         */
 
+        // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
+        // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
+        // non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
+        // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
+        // the accelerometer biases calculated above must be divided by 8.
+        
         int[] accelBiasReg = new int[]{0,0,0};
         buffer = mpu9250.read(Registers.XA_OFFSET_H.getValue(),2);
-        accelBiasReg[0] = (buffer[0] << 8) | buffer[1];
+        accelBiasReg[0] = (short) ((buffer[0] << 8) | buffer[1]);
         buffer = mpu9250.read(Registers.YA_OFFSET_H.getValue(),2);
-        accelBiasReg[1] = (buffer[0] << 8) | buffer[1];
+        accelBiasReg[1] = (short) ((buffer[0] << 8) | buffer[1]);
         buffer = mpu9250.read(Registers.ZA_OFFSET_H.getValue(),2);
-        accelBiasReg[2] = (buffer[0] << 8) | buffer[1];
+        accelBiasReg[2] = (short) ((buffer[0] << 8) | buffer[1]);
 
 
         int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
-        int[] mask_bit = new int[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
+        byte[] mask_bit = new byte[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
 
         for(int s = 0; s < 3; s++) {
             if((accelBiasReg[s] & mask)==1) mask_bit[s] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
