@@ -530,7 +530,7 @@ public class MPU9250 extends NineDOF
     {
         byte rawData[] = mpu9250.read(Registers.TEMP_OUT_H.getValue(),2);  // Read the two raw data registers sequentially into data array
         mpu9250.read(Registers.TEMP_OUT_H.getValue(),2);  // Read again to trigger
-        therm.add((float)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
+        therm.add((float)(short)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
 
 }
