@@ -455,17 +455,18 @@ public class MPU9250 extends NineDOF
     public void updateAccelerometerData() throws IOException
     {
         float x,y,z;
+        short xs,ys,zs;
         byte rawData[] = mpu9250.read(Registers.ACCEL_XOUT_H.getValue(), 6);  // Read the six raw data registers sequentially into data array
         mpu9250.read(Registers.ACCEL_XOUT_H.getValue(), 6);  // Read again to trigger
-        x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
-        y = (rawData[2] << 8) | rawData[3] ;
-        z = (rawData[4] << 8) | rawData[5] ;
+        xs = (short) ((rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+        ys = (short) ((rawData[2] << 8) | rawData[3]) ;
+        zs = (short) ((rawData[4] << 8) | rawData[5]) ;
 
-        System.out.println("Accelerometer " + x + ", " + y + ", " + z);
+        //System.out.println("Accelerometer " + xs + ", " + ys + ", " + zs);
 
-        x *= gyrScale.getRes(); // transform from raw data to degrees/s
-        y *= gyrScale.getRes(); // transform from raw data to degrees/s
-        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+        x = (float) ((float)xs*accScale.getRes()); // transform from raw data to g
+        y = (float) ((float)ys*accScale.getRes()); // transform from raw data to g
+        z = (float) ((float)zs*accScale.getRes()); // transform from raw data to g
 
         x -= accBias[0];
         y -= accBias[1];
@@ -478,17 +479,18 @@ public class MPU9250 extends NineDOF
     public void updateGyroscopeData() throws IOException
     {
         float x,y,z;
+        short xs,ys,zs;
         byte rawData[] = mpu9250.read(Registers.GYRO_XOUT_H.getValue(), 6);  // Read the six raw data registers sequentially into data array
         mpu9250.read(Registers.GYRO_XOUT_H.getValue(), 6);  // Read again to trigger
-        x = (rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
-        y = (rawData[2] << 8) | rawData[3] ;
-        z = (rawData[4] << 8) | rawData[5] ;
+        xs = (short) ((rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+        ys = (short) ((rawData[2] << 8) | rawData[3]) ;
+        zs = (short) ((rawData[4] << 8) | rawData[5]) ;
 
         //System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
-        x *= gyrScale.getRes(); // transform from raw data to degrees/s
-        y *= gyrScale.getRes(); // transform from raw data to degrees/s
-        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+        x = (float) ((float)xs*gyrScale.getRes()); // transform from raw data to degrees/s
+        y = (float) ((float)ys*gyrScale.getRes()); // transform from raw data to degrees/s
+        z = (float) ((float)zs*gyrScale.getRes()); // transform from raw data to degrees/s
 
         gyr.add(new TimestampedData3D(x,y,z));
     }
