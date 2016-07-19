@@ -406,8 +406,10 @@ public class MPU9250 extends NineDOF
     private void calibrateMag() throws InterruptedException, IOException
     {
         int sample_count = 0;
-        int mag_bias[] = {0, 0, 0}, mag_scale[] = {0, 0, 0};
-        int mag_max[] = {0x8000, 0x8000, 0x8000}, mag_min[] = {0x7FFF, 0x7FFF, 0x7FFF}, mag_temp[] = {0, 0, 0};
+        int  mag_bias[] = {0, 0, 0}, mag_scale[] = {0, 0, 0};
+        short mag_max[] = {(short)0x8000, (short)0x8000, (short)0x8000},
+        		mag_min[] = {(short)0x7FFF, (short)0x7FFF, (short)0x7FFF},
+        		mag_temp[] = {0, 0, 0};
 
         System.out.println("Mag Calibration: Wave device in a figure eight until done!");
         Thread.sleep(4000);
@@ -417,9 +419,9 @@ public class MPU9250 extends NineDOF
         if(Registers.M_MODE.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
             updateMagnetometerData();  // Read the mag data
-            mag_temp[0] = lastRawMagX;
-            mag_temp[1] = lastRawMagY;
-            mag_temp[2] = lastRawMagZ;
+            mag_temp[0] = (short) lastRawMagX;
+            mag_temp[1] = (short) lastRawMagY;
+            mag_temp[2] = (short) lastRawMagZ;
             for (int jj = 0; jj < 3; jj++) {
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
