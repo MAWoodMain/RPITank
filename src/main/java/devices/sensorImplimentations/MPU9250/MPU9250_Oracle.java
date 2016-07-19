@@ -46,7 +46,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     private final CircularArrayRing<Float> temp;
 
     private final I2CDeviceConfig mpu9250;
-    private final I2CDeviceConfig ak8963;
+    private final int ak8963;
 
     ArrayList<SensorUpdateListener> listeners;
 
@@ -55,8 +55,13 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
 
     public MPU9250_Oracle(int sampleRate, int sampleSize) throws I2CFactory.UnsupportedBusNumberException, IOException, InterruptedException
     {
-        this.mpu9250 = new I2CDeviceConfig(1,0x68,7, 100000);
-        this.ak8963 = new I2CDeviceConfig(1,0x0C,7, 100000);
+        this.mpu9250 = new I2CDeviceConfig(
+            1,                                  //I2C bus index
+            0x69,                                 //I2C device address
+            7,                              //Number of bits in the address
+            100000                          //I2C Clock Frequency
+                );
+        this.ak8963 = 0x0C;
 
         this.sampleRate = sampleRate;
         this.paused = true;
@@ -651,7 +656,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
             switch (deviceType)
             {
                 case mpu9250:
-                    device = DeviceManager.open(mpu9250);
+                    device = DeviceManager.open(I2CDevice.class, mpu9250);
                     break;
                 case ak8963:
                     device = DeviceManager.open(ak8963);
@@ -690,7 +695,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
             switch (deviceType)
             {
                 case mpu9250:
-                    device = DeviceManager.open(mpu9250);
+                    device = DeviceManager.open(I2CDevice.class, mpu9250);
                     break;
                 case ak8963:
                     device = DeviceManager.open(ak8963);
@@ -728,7 +733,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
             switch (deviceType)
             {
                 case mpu9250:
-                    device = DeviceManager.open(mpu9250);
+                    device = DeviceManager.open(I2CDevice.class, mpu9250);
                     break;
                 case ak8963:
                     device = DeviceManager.open(ak8963);

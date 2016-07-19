@@ -48,9 +48,6 @@ public abstract class SensorPackage implements Runnable
                 {
                     lastTime = System.nanoTime();
                     updateData();
-                    Thread.sleep(100);
-
-
                     for(SensorUpdateListener listener:listeners) listener.dataUpdated();
 
                     while(System.nanoTime() - lastTime < waitTime);

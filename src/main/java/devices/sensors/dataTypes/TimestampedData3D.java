@@ -34,7 +34,7 @@ public class TimestampedData3D extends Data3D
     public String toString()
     {
         String format = "%+04.4f";
-        return 	" t: " + String.format(format,(float)(nanoTime/NANOS_PER_SEC)) +
+        return 	" t: " + String.format(format,(float)(nanoTime/(float)NANOS_PER_SEC)) +
                 " " + super.toString();
     }
 
