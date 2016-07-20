@@ -83,28 +83,29 @@ public class MPU9250 extends NineDOF
             aAvg[i] /= TEST_LENGTH;
             gAvg[i] /= TEST_LENGTH;
         }
+        // Configure the accelerometer for self-test
+        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
+        //Thread.sleep(2);
+        mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
+        Thread.sleep(25); // Delay a while to let the device stabilise
 
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), (byte)0xE0);
-        Thread.sleep(2);
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);
-        Thread.sleep(2);
-
-        int[] aSTAvg = new int[3]; //16 bit integer to match registers
+        int[] aSTAvg = new int[3]; // cumulative values hence int to avoid overflow
         int[] gSTAvg = new int[3];
-
-        for(int s=0; s<TEST_LENGTH; s++)
+        
+        // get average self-test values of gyro and accelerometer
+        for(int s=0; s<TEST_LENGTH; s++) 
         {
             registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
             aSTAvg[0] += registers[0];
             aSTAvg[1] += registers[1];
             aSTAvg[2] += registers[2];
-            Thread.sleep(2);
+            //Thread.sleep(2);
 
             registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
             gSTAvg[0] += registers[0];
             gSTAvg[1] += registers[1];
             gSTAvg[2] += registers[2];
-            Thread.sleep(2);
+            //Thread.sleep(2);
         }
 
         for(int i = 0; i<3; i++)
@@ -113,26 +114,27 @@ public class MPU9250 extends NineDOF
             gSTAvg[i] /= TEST_LENGTH;
         }
 
-        Thread.sleep(2);
+        //Thread.sleep(2);
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), GyrScale.GFS_250DPS.getValue());
         Thread.sleep(2);
         mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), AccScale.AFS_2G.getValue());
-        Thread.sleep(25);
+        Thread.sleep(25); // Delay a while to let the device stabilise
 
         byte[] selfTest = new byte[6];
 
         selfTest[0] = mpu9250.read(Registers.SELF_TEST_X_ACCEL.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
         selfTest[1] = mpu9250.read(Registers.SELF_TEST_Y_ACCEL.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
         selfTest[2] = mpu9250.read(Registers.SELF_TEST_Z_ACCEL.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
+        
         selfTest[3] = mpu9250.read(Registers.SELF_TEST_X_GYRO.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
         selfTest[4] = mpu9250.read(Registers.SELF_TEST_Y_GYRO.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
         selfTest[5] = mpu9250.read(Registers.SELF_TEST_Z_GYRO.getAddress());
-        Thread.sleep(2);
+        //Thread.sleep(2);
 
         float[] factoryTrim = new float[6];
 
@@ -384,7 +386,6 @@ public class MPU9250 extends NineDOF
 
     private void calibrateMag() throws InterruptedException, IOException
     {
-        int sample_count = 0;
         int  mag_bias[] = {0, 0, 0}, mag_scale[] = {0, 0, 0};
         short mag_max[] = {(short)0x8000, (short)0x8000, (short)0x8000},
         		mag_min[] = {(short)0x7FFF, (short)0x7FFF, (short)0x7FFF},
