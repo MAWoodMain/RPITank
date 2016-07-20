@@ -85,7 +85,7 @@ public class MPU9250 extends NineDOF
         }
         // Configure the accelerometer for self-test
         mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
-        //Thread.sleep(2);
+        Thread.sleep(2);
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
 
