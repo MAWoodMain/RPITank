@@ -59,26 +59,23 @@ public class MPU9250 extends NineDOF
         Thread.sleep(2);
 
         final int TEST_LENGTH = 200;
-        byte[] buffer = new byte[]{0,0,0,0,0,0};
 
-        short[] aAvg = new short[3]; //16 bit integer to match registers
-        short[] gAvg = new short[3];
-
+        int[] aAvg = new int[3]; //16 bit integer to match registers
+        int[] gAvg = new int[3];
+        short[] registers; 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            buffer = mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(),6);
-            aAvg[0] += ((buffer[0] << 8) | buffer[1]);
-            aAvg[1] += ((buffer[2] << 8) | buffer[3]);
-            aAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
+            aAvg[0] += registers[0];
+            aAvg[1] += registers[1];
+            aAvg[2] += registers[2];
             Thread.sleep(2);
 
-            buffer = new byte[]{0,0,0,0,0,0};
-            buffer = mpu9250.read(Registers.GYRO_XOUT_H.getAddress(),6);
-            gAvg[0] += ((buffer[0] << 8) | buffer[1]);
-            gAvg[1] += ((buffer[2] << 8) | buffer[3]);
-            gAvg[2] += ((buffer[4] << 8) | buffer[5]);
+            registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
+            gAvg[0] += registers[0];
+            gAvg[1] += registers[1];
+            gAvg[2] += registers[2];
             Thread.sleep(2);
-            buffer = new byte[]{0,0,0,0,0,0};
         }
 
         for(int i = 0; i<3; i++)
@@ -97,18 +94,16 @@ public class MPU9250 extends NineDOF
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            buffer = mpu9250.read(Registers.GYRO_XOUT_H.getAddress(),6);
-            aSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
-            aSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
-            aSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
-            buffer = new byte[]{0,0,0,0,0,0};
+            registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
+            aSTAvg[0] += registers[0];
+            aSTAvg[1] += registers[1];
+            aSTAvg[2] += registers[2];
             Thread.sleep(2);
 
-            buffer = mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(),6);
-            gSTAvg[0] += ((buffer[0] << 8) | buffer[1]);
-            gSTAvg[1] += ((buffer[2] << 8) | buffer[3]);
-            gSTAvg[2] += ((buffer[4] << 8) | buffer[5]);
-            buffer = new byte[]{0,0,0,0,0,0};
+            registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
+            gSTAvg[0] += registers[0];
+            gSTAvg[1] += registers[1];
+            gSTAvg[2] += registers[2];
             Thread.sleep(2);
         }
 
@@ -200,13 +195,10 @@ public class MPU9250 extends NineDOF
 
         // At end of sample accumulation, turn off FIFO sensor read
         mpu9250.write(Registers.FIFO_EN.getAddress(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
-        byte[] buffer;
-        buffer = mpu9250.read(Registers.FIFO_COUNTH.getAddress(),2); // read FIFO sample count high and low bytes, high first
 
-        int packetCount = ((buffer[0] << 8) | buffer[1]);
+        short packetCount = read16BitRegisters(mpu9250, Registers.FIFO_COUNTH.getAddress(), 1)[0];
         int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
 
-        buffer = new byte[12];
         int[] accelBiasl = new int[]{0,0,0}; 
         int[] gyroBias = new int[]{0,0,0};
         short[] tempAccelBias = new short[]{0,0,0}; 
@@ -234,6 +226,7 @@ public class MPU9250 extends NineDOF
         else {accelBiasl[2] += accelSensitivity;}
 
 
+        byte[] buffer = new byte[6];
         // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
         buffer[0] = (byte)((-gyroBias[0]/4  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
         buffer[1] = (byte)((-gyroBias[0]/4)       & 0xFF); // Biases are additive, so change sign on calculated average gyro biases
@@ -263,14 +256,7 @@ public class MPU9250 extends NineDOF
         // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
         // the accelerometer biases calculated above must be divided by 8.
         
-        int[] accelBiasReg = new int[]{0,0,0};
-        buffer = mpu9250.read(Registers.XA_OFFSET_H.getAddress(),2);
-        accelBiasReg[0] = (short) ((buffer[0] << 8) | buffer[1]);
-        buffer = mpu9250.read(Registers.YA_OFFSET_H.getAddress(),2);
-        accelBiasReg[1] = (short) ((buffer[0] << 8) | buffer[1]);
-        buffer = mpu9250.read(Registers.ZA_OFFSET_H.getAddress(),2);
-        accelBiasReg[2] = (short) ((buffer[0] << 8) | buffer[1]);
-
+        short[] accelBiasReg = read16BitRegisters(mpu9250, Registers.XA_OFFSET_H.getAddress(), 3);
 
         int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
         byte[] mask_bit = new byte[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
