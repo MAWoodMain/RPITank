@@ -59,8 +59,8 @@ public class AK8963 extends Magnetometer
         Thread.sleep(4000);
 
         // shoot for ~fifteen seconds of mag data
-        if(magMode.getMode() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
-        if(magMode.getMode() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
+        if(magMode == MagMode.MAG_MODE_8HZ) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
+        if(magMode == MagMode.MAG_MODE_100HZ) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
             updateData();  // Read the mag data
             mag_temp[0] = (int)rawXVals.get(0).getX();
@@ -70,8 +70,8 @@ public class AK8963 extends Magnetometer
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
             }
-            if(magMode.getMode() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
-            if(magMode.getMode() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
+            if(magMode == MagMode.MAG_MODE_8HZ) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+            if(magMode == MagMode.MAG_MODE_100HZ) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
         }
         // Get hard iron correction
         mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
