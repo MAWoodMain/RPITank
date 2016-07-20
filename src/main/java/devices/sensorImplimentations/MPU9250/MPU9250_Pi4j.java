@@ -16,9 +16,9 @@ import java.util.ArrayList;
  */
 public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, Thermometer, Runnable
 {
-    private static final MagScale magScale = MagScale.MFS_16BIT;
-    private static final GyrScale gyrScale = GyrScale.GFS_2000DPS;
-    private static final AccScale accScale = AccScale.AFS_4G;
+    private static final MagParams magParams = MagParams.MFS_16BIT;
+    private static final GyrParams gyrParams = GyrParams.GFS_2000DPS;
+    private static final AccParams accParams = AccParams.AFS_4G;
 
     private int lastRawMagX;
     private int lastRawMagY;
@@ -86,8 +86,8 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         Thread.sleep(4000);
 
         // shoot for ~fifteen seconds of mag data
-        if(Registers.M_MODE.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
-        if(Registers.M_MODE.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
+        if(Registers.MAG_MODE_100HZ.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
+        if(Registers.MAG_MODE_100HZ.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
             updateMagnetometerData();  // Read the mag data
             mag_temp[0] = lastRawMagX;
@@ -97,17 +97,17 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
             }
-            if(Registers.M_MODE.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
-            if(Registers.M_MODE.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
+            if(Registers.MAG_MODE_100HZ.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+            if(Registers.MAG_MODE_100HZ.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
         }
         // Get hard iron correction
         mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
         mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
         mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
 
-        magBias[0] = (float) mag_bias[0]*magScale.getRes()*magCalibration[0];  // save mag biases in G for main program
-        magBias[1] = (float) mag_bias[1]*magScale.getRes()*magCalibration[1];
-        magBias[2] = (float) mag_bias[2]*magScale.getRes()*magCalibration[2];
+        magBias[0] = (float) mag_bias[0]*magParams.getRes()*magCalibration[0];  // save mag biases in G for main program
+        magBias[1] = (float) mag_bias[1]*magParams.getRes()*magCalibration[1];
+        magBias[2] = (float) mag_bias[2]*magParams.getRes()*magCalibration[2];
 
         // Get soft iron correction estimate
         mag_scale[0]  = (mag_max[0] - mag_min[0])/2;  // get average x axis max chord length in counts
@@ -141,7 +141,7 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         // Configure the magnetometer for continuous read and highest resolution
         // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-        ak8963.write(Registers.AK8963_CNTL.getValue(), (byte)(magScale.getValue() << 4 | Registers.M_MODE.getValue())); // Set magnetometer data resolution and sample ODR
+        ak8963.write(Registers.AK8963_CNTL.getValue(), (byte)(magParams.getValue() << 4 | Registers.MAG_MODE_100HZ.getValue())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
     }
 
@@ -174,7 +174,7 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
-        c = (byte)(c | gyrScale.getValue() << 3); // Set full scale range for the gyro
+        c = (byte)(c | gyrParams.getValue() << 3); // Set full scale range for the gyro
         // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
         mpu9250.write(Registers.GYRO_CONFIG.getValue(), c ); // Write new GYRO_CONFIG value to register
 
@@ -182,7 +182,7 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         c = (byte) mpu9250.read(Registers.ACCEL_CONFIG.getValue()); // get current ACCEL_CONFIG register value
         // c = c & ~0xE0; // Clear self-test bits [7:5]
         c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
-        c = (byte)(c | accScale.getValue() << 3); // Set full scale range for the accelerometer
+        c = (byte)(c | accParams.getValue() << 3); // Set full scale range for the accelerometer
         mpu9250.write(Registers.ACCEL_CONFIG.getValue(), c); // Write new ACCEL_CONFIG register value
 
         // Set accelerometer sample rate configuration
@@ -363,13 +363,13 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         mpu9250.write(Registers.CONFIG.getValue(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
         Thread.sleep(2);
         // Set full scale range for the gyro to 250 dps
-        mpu9250.write(Registers.GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getX());
+        mpu9250.write(Registers.GYRO_CONFIG.getValue(),(byte)(1<<FS));//GyrParams.GFS_250DPS.getX());
         Thread.sleep(2);
         // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         mpu9250.write(Registers.ACCEL_CONFIG2.getValue(),(byte)0x02);
         Thread.sleep(2);
         // Set full scale range for the accelerometer to 2 g
-        mpu9250.write(Registers.ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccScale.AFS_2G.getX());
+        mpu9250.write(Registers.ACCEL_CONFIG.getValue(),(byte)(1<<FS));// AccParams.AFS_2G.getX());
         Thread.sleep(2);
 
         final int TEST_LENGTH = 200;
@@ -437,9 +437,9 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
         }
 
         Thread.sleep(2);
-        mpu9250.write(Registers.GYRO_CONFIG.getValue(), GyrScale.GFS_250DPS.getValue());
+        mpu9250.write(Registers.GYRO_CONFIG.getValue(), GyrParams.GFS_250DPS.getValue());
         Thread.sleep(2);
-        mpu9250.write(Registers.ACCEL_CONFIG.getValue(), AccScale.AFS_2G.getValue());
+        mpu9250.write(Registers.ACCEL_CONFIG.getValue(), AccParams.AFS_2G.getValue());
         Thread.sleep(25);
 
         int[] selfTest = new int[6];
@@ -622,9 +622,9 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
             lastRawMagZ = (buffer[5] << 8) | buffer[4];
             float x=lastRawMagX,y=lastRawMagY,z=lastRawMagZ;
 
-            x *= magScale.getRes()*magCalibration[0];
-            y *= magScale.getRes()*magCalibration[1];
-            z *= magScale.getRes()*magCalibration[2];
+            x *= magParams.getRes()*magCalibration[0];
+            y *= magParams.getRes()*magCalibration[1];
+            z *= magParams.getRes()*magCalibration[2];
 
             x -= magBias[0];
             y -= magBias[1];
@@ -648,9 +648,9 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
 
         //System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
-        x *= gyrScale.getRes(); // transform from raw data to degrees/s
-        y *= gyrScale.getRes(); // transform from raw data to degrees/s
-        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+        x *= gyrParams.getRes(); // transform from raw data to degrees/s
+        y *= gyrParams.getRes(); // transform from raw data to degrees/s
+        z *= gyrParams.getRes(); // transform from raw data to degrees/s
 
         gyro.add(new TimestampedData3D(x,y,z));
     }
@@ -668,9 +668,9 @@ public class MPU9250_Pi4j implements Accelerometer, Gyroscope, Magnetometer, The
 
         System.out.println("Accelerometer " + x + ", " + y + ", " + z);
 
-        x *= gyrScale.getRes(); // transform from raw data to degrees/s
-        y *= gyrScale.getRes(); // transform from raw data to degrees/s
-        z *= gyrScale.getRes(); // transform from raw data to degrees/s
+        x *= gyrParams.getRes(); // transform from raw data to degrees/s
+        y *= gyrParams.getRes(); // transform from raw data to degrees/s
+        z *= gyrParams.getRes(); // transform from raw data to degrees/s
 
         x -= accelBias[0];
         y -= accelBias[1];

@@ -13,7 +13,7 @@ import java.io.IOException;
 public class AK8963 extends Magnetometer
 {
     private final I2CImplementation ak8963;
-    private static final MagScale magScale = MagScale.MFS_16BIT;
+    private static final MagParams magParams = MagParams.MFS_16BIT;
 
     public AK8963(I2CImplementation ak8963, int sampleRate,int sampleSize) throws IOException, InterruptedException
     {
@@ -21,7 +21,7 @@ public class AK8963 extends Magnetometer
         this.ak8963 = ak8963;
 
         this.setUnitCorrectionOffset(0);
-        this.setUnitCorrectionScale(magScale.getRes());
+        this.setUnitCorrectionScale(magParams.getRes());
 
         init();
         calibrateMag();
@@ -44,7 +44,7 @@ public class AK8963 extends Magnetometer
         // Configure the magnetometer for continuous read and highest resolution
         // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-        ak8963.write(Registers.AK8963_CNTL.getValue(), (byte)(magScale.getValue() << 4 | Registers.M_MODE.getValue())); // Set magnetometer data resolution and sample ODR
+        ak8963.write(Registers.AK8963_CNTL.getValue(), (byte)(magParams.getValue() << 4 | Registers.MAG_MODE_100HZ.getValue())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
     }
 
@@ -58,8 +58,8 @@ public class AK8963 extends Magnetometer
         Thread.sleep(4000);
 
         // shoot for ~fifteen seconds of mag data
-        if(Registers.M_MODE.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
-        if(Registers.M_MODE.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
+        if(Registers.MAG_MODE_100HZ.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
+        if(Registers.MAG_MODE_100HZ.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
             updateData();  // Read the mag data
             mag_temp[0] = (int)rawXVals.get(0).getX();
@@ -69,17 +69,17 @@ public class AK8963 extends Magnetometer
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
             }
-            if(Registers.M_MODE.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
-            if(Registers.M_MODE.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
+            if(Registers.MAG_MODE_100HZ.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+            if(Registers.MAG_MODE_100HZ.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
         }
         // Get hard iron correction
         mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
         mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
         mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
 
-        this.setxBias((float) mag_bias[0]*magScale.getRes()* this.getxScaling());  // save mag biases in G for main program
-        this.setyBias((float) mag_bias[1]*magScale.getRes()* this.getyScaling());
-        this.setzBias((float) mag_bias[2]*magScale.getRes()* this.getzScaling());
+        this.setxBias((float) mag_bias[0]*magParams.getRes()* this.getxScaling());  // save mag biases in G for main program
+        this.setyBias((float) mag_bias[1]*magParams.getRes()* this.getyScaling());
+        this.setzBias((float) mag_bias[2]*magParams.getRes()* this.getzScaling());
 
         // Get soft iron correction estimate
         mag_scale[0]  = (mag_max[0] - mag_min[0])/2;  // get average x axis max chord length in counts

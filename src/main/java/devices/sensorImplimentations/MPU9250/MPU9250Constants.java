@@ -6,7 +6,8 @@ package devices.sensorImplimentations.MPU9250;
  */
 enum Registers
 {
-    AK8963_ADDRESS   (0x0C),
+    AK8963_ADDRESS   (0x0C), // i2c bus address
+    
     WHO_AM_I_AK8963  (0x00), // should return (0x48
     INFO             (0x01),
     AK8963_ST1       (0x02),  // data ready status bit 0
@@ -23,17 +24,6 @@ enum Registers
     AK8963_ASAX      (0x10),  // Fuse ROM x-axis sensitivity adjustment value
     AK8963_ASAY      (0x11),  // Fuse ROM y-axis sensitivity adjustment value
     AK8963_ASAZ      (0x12),  // Fuse ROM z-axis sensitivity adjustment value
-
-    SELF_TEST_X_GYRO (0x00),
-    SELF_TEST_Y_GYRO (0x01),
-    SELF_TEST_Z_GYRO (0x02),
-
-    SELF_TEST_X_ACCEL(0x0D),
-    SELF_TEST_Y_ACCEL(0x0E),
-    SELF_TEST_Z_ACCEL(0x0F),
-
-    SELF_TEST_A      (0x10),
-
     XG_OFFSET_H      (0x13),  // User-defined trim values for gyroscope
     XG_OFFSET_L      (0x14),
     YG_OFFSET_H      (0x15),
@@ -47,11 +37,9 @@ enum Registers
     ACCEL_CONFIG2    (0x1D),
     LP_ACCEL_ODR     (0x1E),
     WOM_THR          (0x1F),
-
     MOT_DUR          (0x20),  // Duration counter threshold for motion interrupt generation, 1 kHz rate, LSB = 1 ms
     ZMOT_THR         (0x21),  // Zero-motion detection threshold bits [7:0]
     ZRMOT_DUR        (0x22),  // Duration counter threshold for zero motion interrupt generation, 16 Hz rate, LSB = 64 ms
-
     FIFO_EN          (0x23),
     I2C_MST_CTRL     (0x24),
     I2C_SLV0_ADDR    (0x25),
@@ -141,7 +129,18 @@ enum Registers
     ZA_OFFSET_H      (0x7D),
     ZA_OFFSET_L      (0x7E),
 
-    M_MODE           (0x06); // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
+    SELF_TEST_X_GYRO (0x00),
+    SELF_TEST_Y_GYRO (0x01),
+    SELF_TEST_Z_GYRO (0x02),
+
+    SELF_TEST_X_ACCEL(0x0D),
+    SELF_TEST_Y_ACCEL(0x0E),
+    SELF_TEST_Z_ACCEL(0x0F),
+
+    SELF_TEST_A      (0x10),
+
+    MAG_MODE_100HZ   (0x06), // 6 for 100 Hz continuous magnetometer data read
+    MAG_MODE_8HZ	 (0x02); // 2 for 8 Hz, continuous magnetometer data read
 
     private final int value;
     Registers(int value)
@@ -154,14 +153,14 @@ enum Registers
     }
 }
 
-enum MagScale
+enum MagParams
 {
     MFS_14BIT((byte)0x00,10f*4912f/8190f), //mscale val = 0, 14 bit will be shifted 4 left
     MFS_16BIT((byte)0x01,10f*4912f/32760f); //mscale val = 1, 16 bit will be shifted 4 left
 
     private final byte value;
     private final float res;
-    MagScale(byte value, float res)
+    MagParams(byte value, float res)
     {
         this.value = value;
         this.res = res;
@@ -180,7 +179,7 @@ enum MagScale
     }
 }
 
-enum AccScale
+enum AccParams
 {
     AFS_2G(0x00,2),
     AFS_4G(0x08,4),
@@ -189,7 +188,7 @@ enum AccScale
 
     private final int value;
     private final int minMax;
-    AccScale(int value, int minMax)
+    AccParams(int value, int minMax)
     {
         this.value = value;
         this.minMax = minMax;
@@ -208,7 +207,7 @@ enum AccScale
     }
 }
 
-enum GyrScale
+enum GyrParams
 {
     GFS_250DPS(0x00,250),
     GFS_500DPS(0x08,500),
@@ -217,7 +216,7 @@ enum GyrScale
 
     private final int value;
     private final int minMax;
-    GyrScale(int value, int minMax)
+    GyrParams(int value, int minMax)
     {
         this.value = value;
         this.minMax = minMax;
