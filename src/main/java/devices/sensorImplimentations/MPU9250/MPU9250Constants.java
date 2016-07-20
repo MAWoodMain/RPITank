@@ -147,7 +147,7 @@ enum Registers
     {
         this.address = addr;
     }
-    public int getValue()
+    public int getAddress()
     {
         return address;
     }
@@ -171,14 +171,14 @@ enum MagMode
     
 }
 
-enum MagParams
+enum MagScale
 {
     MFS_14BIT((byte)0x00,10f*4912f/8190f), //mscale val = 0, 14 bit will be shifted 4 left
     MFS_16BIT((byte)0x01,10f*4912f/32760f); //mscale val = 1, 16 bit will be shifted 4 left
 
     private final byte value;
     private final float res;
-    MagParams(byte value, float res)
+    MagScale(byte value, float res)
     {
         this.value = value;
         this.res = res;
@@ -197,7 +197,7 @@ enum MagParams
     }
 }
 
-enum AccParams
+enum AccScale
 {
     AFS_2G(0x00,2),
     AFS_4G(0x08,4),
@@ -206,7 +206,7 @@ enum AccParams
 
     private final int value;
     private final int minMax;
-    AccParams(int value, int minMax)
+    AccScale(int value, int minMax)
     {
         this.value = value;
         this.minMax = minMax;
@@ -225,7 +225,7 @@ enum AccParams
     }
 }
 
-enum GyrParams
+enum GyrScale
 {
     GFS_250DPS(0x00,250),
     GFS_500DPS(0x08,500),
@@ -235,7 +235,7 @@ enum GyrParams
 
     private final int value;
     private final int minMax;
-    GyrParams(int value, int minMax)
+    GyrScale(int value, int minMax)
     {
         this.value = value;
         this.minMax = minMax;
