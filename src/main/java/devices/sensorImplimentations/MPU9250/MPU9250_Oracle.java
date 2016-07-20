@@ -1,13 +1,13 @@
 package devices.sensorImplimentations.MPU9250;
 
 import com.pi4j.io.i2c.I2CFactory;
+
 import jdk.dio.DeviceManager;
 import jdk.dio.i2cbus.I2CDevice;
 import jdk.dio.i2cbus.I2CDeviceConfig;
 import devices.sensors.dataTypes.CircularArrayRing;
 import devices.sensors.dataTypes.TimestampedData3D;
 import devices.sensors.interfaces.*;
-
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,6 +26,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
     }
 
     private static final MagParams magParams = MagParams.MFS_16BIT;
+    private static final MagMode magMode = MagMode.MAG_MODE_100HZ;
     private static final GyrParams gyrParams = GyrParams.GFS_2000DPS;
     private static final AccParams accParams = AccParams.AFS_4G;
 
@@ -93,8 +94,8 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         Thread.sleep(4000);
 
         // shoot for ~fifteen seconds of mag data
-        if(Registers.MAG_MODE_100HZ.getValue() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
-        if(Registers.MAG_MODE_100HZ.getValue() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
+        if(magMode.getMode() == 0x02) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
+        if(magMode.getMode() == 0x06) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
         for(int ii = 0; ii < sample_count; ii++) {
             updateMagnetometerData();  // Read the mag data
             mag_temp[0] = lastRawMagX;
@@ -104,8 +105,8 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
                 if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
                 if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
             }
-            if(Registers.MAG_MODE_100HZ.getValue() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
-            if(Registers.MAG_MODE_100HZ.getValue() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
+            if(magMode.getMode() == 0x02) Thread.sleep(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+            if(magMode.getMode() == 0x06) Thread.sleep(12);  // at 100 Hz ODR, new mag data is available every 10 ms
         }
         // Get hard iron correction
         mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
@@ -148,7 +149,7 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         // Configure the magnetometer for continuous read and highest resolution
         // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-        write(Device.ak8963, Registers.AK8963_CNTL, (byte)(magParams.getValue() << 4 | Registers.MAG_MODE_100HZ.getValue())); // Set magnetometer data resolution and sample ODR
+        write(Device.ak8963, Registers.AK8963_CNTL, (byte)(magParams.getValue() << 4 | magMode.getMode())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
     }
 
@@ -418,9 +419,9 @@ public class MPU9250_Oracle implements Accelerometer, Gyroscope, Magnetometer, T
         selfTest[0] = read(Device.mpu9250, Registers.SELF_TEST_X_ACCEL);
         selfTest[1] = read(Device.mpu9250, Registers.SELF_TEST_Y_ACCEL);
         selfTest[2] = read(Device.mpu9250, Registers.SELF_TEST_Z_ACCEL);
-        selfTest[3] = read(Device.mpu9250, Registers.SELF_TEST_X_GYRO);
-        selfTest[4] = read(Device.mpu9250, Registers.SELF_TEST_Y_GYRO);
-        selfTest[5] = read(Device.mpu9250, Registers.SELF_TEST_Z_GYRO);
+        selfTest[3] = read(Device.mpu9250, Registers.SELF_TEST_X_GYRO.getValue());
+        selfTest[4] = read(Device.mpu9250, Registers.SELF_TEST_Y_GYRO.getValue());
+        selfTest[5] = read(Device.mpu9250, Registers.SELF_TEST_Z_GYRO.getValue());
 
         float[] factoryTrim = new float[6];
 

@@ -21,9 +21,18 @@ enum Registers
     AK8963_CNTL      (0x0A),  // Power down (0000), single-measurement (0001), self-test (1000) and Fuse ROM (1111) modes on bits 3:0
     AK8963_ASTC      (0x0C),  // Self test control
     AK8963_I2CDIS    (0x0F),  // I2C disable
-    AK8963_ASAX      (0x10),  // Fuse ROM x-axis sensitivity adjustment value
-    AK8963_ASAY      (0x11),  // Fuse ROM y-axis sensitivity adjustment value
-    AK8963_ASAZ      (0x12),  // Fuse ROM z-axis sensitivity adjustment value
+    AK8963_ASAX      (0x10),  // Fuse ROM x-axis sensitivity adjustment address
+    AK8963_ASAY      (0x11),  // Fuse ROM y-axis sensitivity adjustment address
+    AK8963_ASAZ      (0x12),  // Fuse ROM z-axis sensitivity adjustment address
+    
+    SELF_TEST_X_GYRO (0x00),
+    SELF_TEST_Y_GYRO (0x01),
+    SELF_TEST_Z_GYRO (0x02),
+    
+    SELF_TEST_X_ACCEL(0x0D),
+    SELF_TEST_Y_ACCEL(0x0E),
+    SELF_TEST_Z_ACCEL(0x0F),
+
     XG_OFFSET_H      (0x13),  // User-defined trim values for gyroscope
     XG_OFFSET_L      (0x14),
     YG_OFFSET_H      (0x15),
@@ -129,28 +138,37 @@ enum Registers
     ZA_OFFSET_H      (0x7D),
     ZA_OFFSET_L      (0x7E),
 
-    SELF_TEST_X_GYRO (0x00),
-    SELF_TEST_Y_GYRO (0x01),
-    SELF_TEST_Z_GYRO (0x02),
 
-    SELF_TEST_X_ACCEL(0x0D),
-    SELF_TEST_Y_ACCEL(0x0E),
-    SELF_TEST_Z_ACCEL(0x0F),
+    SELF_TEST_A      (0x10);
 
-    SELF_TEST_A      (0x10),
 
-    MAG_MODE_100HZ   (0x06), // 6 for 100 Hz continuous magnetometer data read
-    MAG_MODE_8HZ	 (0x02); // 2 for 8 Hz, continuous magnetometer data read
-
-    private final int value;
-    Registers(int value)
+    private final int address;
+    Registers(int addr)
     {
-        this.value = value;
+        this.address = addr;
     }
     public int getValue()
     {
-        return value;
+        return address;
     }
+}
+
+enum MagMode
+{
+    MAG_MODE_100HZ   ((byte)0x06), // 6 for 100 Hz continuous magnetometer data read
+    MAG_MODE_8HZ	 ((byte)0x02); // 2 for 8 Hz, continuous magnetometer data read
+
+    private final byte mode;
+    
+    MagMode(byte mode)
+    {
+    	this.mode = mode;
+    }
+    public byte getMode()
+    {
+    	return this.mode;
+    }
+    
 }
 
 enum MagParams
@@ -213,6 +231,7 @@ enum GyrParams
     GFS_500DPS(0x08,500),
     GFS_1000DPS(0x10,1000),
     GFS_2000DPS(0x18,2000);
+
 
     private final int value;
     private final int minMax;
