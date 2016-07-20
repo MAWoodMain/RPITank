@@ -89,8 +89,8 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);
         Thread.sleep(2);
 
-        short[] aSTAvg = new short[3]; //16 bit integer to match registers
-        short[] gSTAvg = new short[3];
+        int[] aSTAvg = new int[3]; //16 bit integer to match registers
+        int[] gSTAvg = new int[3];
 
         for(int s=0; s<TEST_LENGTH; s++)
         {
