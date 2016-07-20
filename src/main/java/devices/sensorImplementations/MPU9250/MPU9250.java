@@ -99,13 +99,13 @@ public class MPU9250 extends NineDOF
             aSTAvg[0] += registers[0];
             aSTAvg[1] += registers[1];
             aSTAvg[2] += registers[2];
-            //Thread.sleep(2);
+            Thread.sleep(2);
 
             registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
             gSTAvg[0] += registers[0];
             gSTAvg[1] += registers[1];
             gSTAvg[2] += registers[2];
-            //Thread.sleep(2);
+            Thread.sleep(2);
         }
 
         for(int i = 0; i<3; i++)
@@ -114,7 +114,7 @@ public class MPU9250 extends NineDOF
             gSTAvg[i] /= TEST_LENGTH;
         }
 
-        //Thread.sleep(2);
+        Thread.sleep(2);
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), GyrScale.GFS_250DPS.getValue());
         Thread.sleep(2);
         mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), AccScale.AFS_2G.getValue());
@@ -123,18 +123,18 @@ public class MPU9250 extends NineDOF
         byte[] selfTest = new byte[6];
 
         selfTest[0] = mpu9250.read(Registers.SELF_TEST_X_ACCEL.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
         selfTest[1] = mpu9250.read(Registers.SELF_TEST_Y_ACCEL.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
         selfTest[2] = mpu9250.read(Registers.SELF_TEST_Z_ACCEL.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
         
         selfTest[3] = mpu9250.read(Registers.SELF_TEST_X_GYRO.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
         selfTest[4] = mpu9250.read(Registers.SELF_TEST_Y_GYRO.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
         selfTest[5] = mpu9250.read(Registers.SELF_TEST_Z_GYRO.getAddress());
-        //Thread.sleep(2);
+        Thread.sleep(2);
 
         float[] factoryTrim = new float[6];
 
