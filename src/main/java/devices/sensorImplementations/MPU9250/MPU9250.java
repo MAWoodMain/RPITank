@@ -214,15 +214,7 @@ public class MPU9250 extends NineDOF
 
         for(int s = 0; s < packetCount; s++)
         {
-            buffer = mpu9250.read(Registers.FIFO_R_W.getAddress(),12); // read FIFO samples based on count
-
-            tempAccelBias[0] = (short) ((buffer[0] << 8) | buffer[1]); //Signed 16 bit quantities
-            tempAccelBias[1] = (short) ((buffer[2] << 8) | buffer[3]);
-            tempAccelBias[2] = (short) ((buffer[4] << 8) | buffer[5]);
-            tempGyroBias[0] = (short) ((buffer[6] << 8) | buffer[7]);
-            tempGyroBias[1] = (short) ((buffer[8] << 8) | buffer[9]);
-            tempGyroBias[2] = (short) ((buffer[10] << 8) | buffer[11]);
-            
+            tempGyroBias = read16BitRegisters(mpu9250,Registers.FIFO_R_W.getAddress(),6); //12 bytes
             accelBiasl[0] += tempAccelBias[0]; //Signed 32 bit quantities
             accelBiasl[1] += tempAccelBias[1];
             accelBiasl[2] += tempAccelBias[2];
@@ -416,9 +408,7 @@ public class MPU9250 extends NineDOF
         Thread.sleep(4000);
 
         // shoot for ~fifteen seconds of mag data
-        if(magMode == MagMode.MAG_MODE_8HZ) sample_count = 128;  // at 8 Hz ODR, new mag data is available every 125 ms
-        if(magMode == MagMode.MAG_MODE_100HZ) sample_count = 1500;  // at 100 Hz ODR, new mag data is available every 10 ms
-        for(int ii = 0; ii < sample_count; ii++) {
+        for(int ii = 0; ii < magMode.getSampleCount(); ii++) {
             updateMagnetometerData();  // Read the mag data
             mag_temp[0] = (short) lastRawMagX;
             mag_temp[1] = (short) lastRawMagY;
@@ -458,18 +448,15 @@ public class MPU9250 extends NineDOF
     public void updateAccelerometerData() throws IOException
     {
         float x,y,z;
-        short xs,ys,zs;
-        byte rawData[] = mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(), 6);  // Read the six raw data registers sequentially into data array
-        mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(), 6);  // Read again to trigger
-        xs = (short) ((rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-        ys = (short) ((rawData[2] << 8) | rawData[3]) ;
-        zs = (short) ((rawData[4] << 8) | rawData[5]) ;
-
+        short registers[];
+        //mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(), 6);  // Read again to trigger
+ 
+        registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
         //System.out.println("Accelerometer " + xs + ", " + ys + ", " + zs);
 
-        x = (float) ((float)xs*accScale.getRes()); // transform from raw data to g
-        y = (float) ((float)ys*accScale.getRes()); // transform from raw data to g
-        z = (float) ((float)zs*accScale.getRes()); // transform from raw data to g
+        x = (float) ((float)registers[0]*accScale.getRes()); // transform from raw data to g
+        y = (float) ((float)registers[1]*accScale.getRes()); // transform from raw data to g
+        z = (float) ((float)registers[2]*accScale.getRes()); // transform from raw data to g
 
         x -= accBias[0];
         y -= accBias[1];
@@ -482,18 +469,14 @@ public class MPU9250 extends NineDOF
     public void updateGyroscopeData() throws IOException
     {
         float x,y,z;
-        short xs,ys,zs;
-        byte rawData[] = mpu9250.read(Registers.GYRO_XOUT_H.getAddress(), 6);  // Read the six raw data registers sequentially into data array
-        mpu9250.read(Registers.GYRO_XOUT_H.getAddress(), 6);  // Read again to trigger
-        xs = (short) ((rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-        ys = (short) ((rawData[2] << 8) | rawData[3]) ;
-        zs = (short) ((rawData[4] << 8) | rawData[5]) ;
-
+        short registers[];
+        //mpu9250.read(Registers.GYRO_XOUT_H.getAddress(), 6);  // Read again to trigger
+        registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
         //System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
-        x = (float) ((float)xs*gyrScale.getRes()); // transform from raw data to degrees/s
-        y = (float) ((float)ys*gyrScale.getRes()); // transform from raw data to degrees/s
-        z = (float) ((float)zs*gyrScale.getRes()); // transform from raw data to degrees/s
+        x = (float) ((float)registers[0]*gyrScale.getRes()); // transform from raw data to degrees/s
+        y = (float) ((float)registers[1]*gyrScale.getRes()); // transform from raw data to degrees/s
+        z = (float) ((float)registers[2]*gyrScale.getRes()); // transform from raw data to degrees/s
 
         gyr.add(new TimestampedData3D(x,y,z));
     }
@@ -533,5 +516,27 @@ public class MPU9250 extends NineDOF
         mpu9250.read(Registers.TEMP_OUT_H.getAddress(),2);  // Read again to trigger
         therm.add((float)(short)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
-
+    /**
+     * Reads the specified number of 16 bit Registers from a given device and address
+     * @param address 	- the start address for the read
+     * @param regCount 	- number of 16 bit registers to be read
+     * @return 			- an array of shorts (16 bit signed values) holding the registers
+     * Each registers is constructed from reading and combining 2 bytes, the first byte forms the more significant part of the register 
+     */
+    public short[] read16BitRegisters(I2CImplementation device, int address, int regCount)
+    {
+        byte rawData[] = null;
+		try {
+			rawData = device.read(address, regCount*2);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+        short[] registers = new short[regCount];
+        for (int i=0;i<regCount;i++)		
+        {
+        	registers[i] = (short) ((rawData[i*2] << 8) | rawData[i*2+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+        }
+    	return registers;
+    }
 }

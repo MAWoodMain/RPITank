@@ -155,18 +155,24 @@ enum Registers
 
 enum MagMode
 {
-    MAG_MODE_100HZ   ((byte)0x06), // 6 for 100 Hz continuous magnetometer data read
-    MAG_MODE_8HZ	 ((byte)0x02); // 2 for 8 Hz, continuous magnetometer data read
+    MAG_MODE_100HZ   ((byte)0x06,1500), // 6 for 100 Hz continuous magnetometer data read
+    MAG_MODE_8HZ	 ((byte)0x02,128); // 2 for 8 Hz, continuous magnetometer data read
 
     private final byte mode;
+    private final int sampleCount;
     
-    MagMode(byte mode)
+    MagMode(byte mode,int sampleCount)
     {
     	this.mode = mode;
+    	this.sampleCount = sampleCount;
     }
     public byte getMode()
     {
     	return this.mode;
+    }
+    public int getSampleCount()
+    {
+    	return this.sampleCount;
     }
     
 }
