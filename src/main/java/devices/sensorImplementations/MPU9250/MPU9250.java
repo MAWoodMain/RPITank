@@ -35,7 +35,7 @@ public class MPU9250 extends NineDOF
         calibrateGyroAcc();
         initMPU9250();
         initAK8963();
-        calibrateMag();
+        //calibrateMag();
     }
 
     private void selfTest() throws IOException, InterruptedException
