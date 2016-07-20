@@ -1,4 +1,4 @@
-package devices.sensorImplimentations; /**
+package devices.sensorImplementations; /**
  * RPITank
  * Created by MAWood on 03/07/2016.
  */

@@ -1,4 +1,4 @@
-package devices.sensorImplimentations.MPU9250;
+package devices.sensorImplementations.MPU9250;
 
 import devices.I2C.I2CImplementation;
 import devices.sensors.NineDOF;

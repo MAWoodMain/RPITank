@@ -1,4 +1,4 @@
-package devices.sensorImplimentations.MPU9250;
+package devices.sensorImplementations.MPU9250;
 
 import devices.I2C.I2CImplementation;
 import devices.sensors.Magnetometer;
@@ -7,7 +7,7 @@ import devices.sensors.dataTypes.TimestampedData3D;
 import java.io.IOException;
 
 /**
- * RPITank - devices.sensorImplimentations.MPU9250
+ * RPITank - devices.sensorImplementations.MPU9250
  * Created by MAWood on 18/07/2016.
  */
 public class AK8963 extends Magnetometer
