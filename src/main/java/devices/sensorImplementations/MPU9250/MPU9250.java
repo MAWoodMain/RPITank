@@ -60,9 +60,14 @@ public class MPU9250 extends NineDOF
 
         final int TEST_LENGTH = 200;
 
-        int[] aAvg = new int[3]; //16 bit integer to match registers
+        int[] aAvg = new int[3]; //32 bit integer to accumulate
         int[] gAvg = new int[3];
         short[] registers; 
+        for (int i = 0; i<3; i++)
+        {
+        	aAvg = 0;
+        	gAvg = 0;
+        }
         for(int s=0; s<TEST_LENGTH; s++)
         {
             registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
@@ -145,18 +150,18 @@ public class MPU9250 extends NineDOF
         factoryTrim[4] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[4] - 1f);
         factoryTrim[5] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[5] - 1f);
 
-        float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0];
-        float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1];
-        float aZAccuracy = 100*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2];
+        float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0]-100;
+        float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1]-100;
+        float aZAccuracy = 100*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2]-100;
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
         System.out.println("x: " + aXAccuracy + "%");
         System.out.println("y: " + aYAccuracy + "%");
         System.out.println("z: " + aZAccuracy + "%");
         System.out.println("Gyroscope accuracy:(% away from factory values)");
-        System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
-        System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
-        System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5] + "%");
+        System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3]-100 + "%");
+        System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4]-100 + "%");
+        System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5]-100 + "%");
     }
 
     private void calibrateGyroAcc() throws IOException, InterruptedException
