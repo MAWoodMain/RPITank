@@ -2,6 +2,8 @@ package main;
 
 import java.io.IOException;
 
+//import com.pi4j.io.gpio.GpioController;
+//import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CFactory;
 
@@ -13,12 +15,14 @@ public class MPU9250Test {
     public static void main(String[] args)
     {
         I2CBus bus = null;
+    	System.out.println("Attempt to get Bus 1");
         try {
-            bus = I2CFactory.getInstance(I2CBus.BUS_0);
-
+        	//final GpioController gpio = GpioFactory.getInstance();
+            bus = I2CFactory.getInstance(I2CBus.BUS_1); 
+            System.out.println("Got Bus, create devices");
             MPU9250 mpu9250 = new MPU9250(
                     new Pi4jI2CDevice(bus.getDevice(0x68)), // MPU9250 I2C device
-                    new Pi4jI2CDevice(bus.getDevice(0x0C)), // ak8963 I2C device
+                    new Pi4jI2CDevice(bus.getDevice(0x0C)), // ak8963 I2C 
                     100,                                    // sample rate
                     100);                                   // sample size
             Thread sensor = new Thread(mpu9250);
