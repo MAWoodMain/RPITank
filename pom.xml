@@ -3,28 +3,101 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>me.mawood</groupId>
     <artifactId>RPITank</artifactId>
     <version>1.0-SNAPSHOT</version>
+ 	<name>RPITank</name>
+	<description>Navigation for a model tank</description>
+ 
     <properties>
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<!-- DEFAULT RASPBERRY PI PROPERTIES -->
+		<pi.host>192.168.1.127</pi.host>
+		<pi.port>22</pi.port>
+		<pi.user>pi</pi.user>	
+		<pi.password>raspberry</pi.password>
+		<pi.deployDirectory>/home/pi/artifacts</pi.deployDirectory>
+		<pi.main.class>me.mawood.testPkg.RPITank</pi.main.class>
   	</properties>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.5.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
             </plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.0.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>${pi.main.class}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<!--This plugin will transfer the executable JAR file to the Pi and runs 
+				it -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<id>ant-copy-execute</id>
+						<phase>install</phase>
+						<configuration>
+
+							<target>
+								<!-- ensure the target directory exists on the Raspberry Pi -->
+								<sshexec host="${pi.host}" port="${pi.port}" username="${pi.user}"
+									password="${pi.password}" trust="true" failonerror="false"
+									verbose="true" command="mkdir --parents ${pi.deployDirectory}" />
+
+								<!-- copy the JAR file to the Raspberry Pi -->
+								<scp file="${project.build.directory}/${project.build.finalName}.jar"
+									todir="${pi.user}:${pi.password}@${pi.host}:${pi.deployDirectory}"
+									port="${pi.port}" trust="true" verbose="true" failonerror="true" />
+
+
+								<!-- run the JAR file on the Raspberry Pi -->
+								<sshexec host="${pi.host}" port="${pi.port}" username="${pi.user}"
+									password="${pi.password}" trust="true" failonerror="false"
+									verbose="true"
+									command="java -jar ${pi.deployDirectory}/${project.build.finalName}.jar" />
+							</target>
+
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.ant</groupId>
+						<artifactId>ant-jsch</artifactId>
+						<version>1.9.6</version>
+					</dependency>
+				</dependencies>
+			</plugin>
         </plugins>
     </build>
-
+<!--  
     <repositories>
         <repository>
             <id>oss-snapshots-repo</id>
@@ -36,7 +109,7 @@
             </snapshots>
         </repository>
     </repositories>
-
+-->
     <dependencies>
         <dependency>
             <groupId>com.pi4j</groupId>
