@@ -21,7 +21,7 @@
 		<pi.user>pi</pi.user>	
 		<pi.password>raspberry</pi.password>
 		<pi.deployDirectory>/home/pi/artifacts</pi.deployDirectory>
-		<pi.main.class>me.mawood.testPkg.RPITank</pi.main.class>
+		<pi.main.class>main.MPU9250Test</pi.main.class>
   	</properties>
 
     <build>
