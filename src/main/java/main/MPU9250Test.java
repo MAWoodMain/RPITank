@@ -14,6 +14,7 @@ public class MPU9250Test {
 
     public static void main(String[] args)
     {
+    	System.out.println("Start MPU9250Test main()");
         I2CBus bus = null;
     	System.out.println("Attempt to get Bus 1");
         try {
