@@ -23,6 +23,26 @@
 		<pi.deployDirectory>/home/pi/artifacts</pi.deployDirectory>
 		<pi.main.class>main.MPU9250Test</pi.main.class>
   	</properties>
+  	
+    <repositories>
+        <repository>
+            <id>oss-snapshots-repo</id>
+            <name>Sonatype OSS Maven Repository</name>
+            <url>https://oss.sonatype.org/content/groups/public</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+    
+    <dependencies>
+        <dependency>
+            <groupId>com.pi4j</groupId>
+            <artifactId>pi4j-core</artifactId>
+            <version>1.2-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -78,7 +98,7 @@
 								<sshexec host="${pi.host}" port="${pi.port}" username="${pi.user}"
 									password="${pi.password}" trust="true" failonerror="false"
 									verbose="true"
-									command="java -classpath .:classes:/opt/pi4j/lib/'*' -jar ${pi.deployDirectory}/${project.build.finalName}.jar" />
+									command="java -classpath .:classes:/opt/pi4j/lib/pi4j-core.jar:/opt/pi4j/lib/pi4j-device.jar:/opt/pi4j/lib/pi4j-gpio-extension.jar -jar ${pi.deployDirectory}/${project.build.finalName}.jar" />
 							</target>
 
 						</configuration>
@@ -97,23 +117,4 @@
 			</plugin>
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>oss-snapshots-repo</id>
-            <name>Sonatype OSS Maven Repository</name>
-            <url>https://oss.sonatype.org/content/groups/public</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
-    <dependencies>
-        <dependency>
-            <groupId>com.pi4j</groupId>
-            <artifactId>pi4j-core</artifactId>
-            <version>1.2-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
-
 </project>
