@@ -42,7 +42,13 @@
             <artifactId>pi4j-core</artifactId>
             <version>1.2-SNAPSHOT</version>
         </dependency>
-    </dependencies>
+        <dependency>
+            <groupId>com.pi4j</groupId>
+            <artifactId>pi4j-native</artifactId>
+            <version>1.2-SNAPSHOT</version>
+            <classifier>raspberrypi-dynamic</classifier>
+            <type>so</type>
+        </dependency>    </dependencies>
 
     <build>
         <plugins>
