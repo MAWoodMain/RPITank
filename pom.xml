@@ -111,7 +111,7 @@
 								<sshexec host="${pi.host}" port="${pi.port}" username="${pi.user}"
 									password="${pi.password}" trust="true" failonerror="false"
 									verbose="true"
-									command="java -classpath .:classes:/opt/pi4j/lib/pi4j-core.jar:/opt/pi4j/lib/pi4j-device.jar:/opt/pi4j/lib/pi4j-gpio-extension.jar -jar ${pi.deployDirectory}/${project.build.finalName}.jar" />
+									command="java -jar ${pi.deployDirectory}/${project.build.finalName}.jar" />
 							</target>
 
 						</configuration>
