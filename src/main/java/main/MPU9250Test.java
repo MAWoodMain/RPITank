@@ -32,30 +32,35 @@ public class MPU9250Test {
 
             Thread.sleep(10000);
             System.out.println("back from sleep");
-            sensor.interrupt();
             int ac = mpu9250.getAccelerometerReadingCount();
             System.out.println("AccReadingCount "+ac);
-            for(int i = ac -1; i>0; i--)
+            for(int i = ac -1; i>=0; i--)
             {
                 System.out.println(" A: " + mpu9250.getAcceleration(i).toString());
             }
             
             int gc = mpu9250.getGyroscopeReadingCount();
             System.out.println("GyroReadingCount "+gc);
-            for(int i = gc -1; i>0; i--)
+            for(int i = gc -1; i>=0; i--)
             {
                 System.out.println("G: " + mpu9250.getRotationalAcceleration(i).toString());
             }
             
             int mc = mpu9250.getMagnetometerReadingCount();
             System.out.println("MagReadingCount "+mc);
-            for(int i = mc -1; i>0; i--)
+            for(int i = mc -1; i>=0; i--)
             {
                System.out.println(" M: " + mpu9250.getGaussianData(i).toString());
             }
+            Thread.sleep(1000);
+            sensor.interrupt();
+            Thread.sleep(1000);
+            bus.close();
         } catch (I2CFactory.UnsupportedBusNumberException | InterruptedException | IOException e) {
             e.printStackTrace();
+            System.exit(1);
         }
+        System.exit(0);
     }
 
 }
