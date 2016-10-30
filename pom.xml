@@ -50,7 +50,8 @@
             <version>1.2-SNAPSHOT</version>
             <classifier>raspberrypi-dynamic</classifier>
             <type>so</type>
-        </dependency>    </dependencies>
+        </dependency>
+      </dependencies>
 
     <build>
         <plugins>
@@ -78,7 +79,7 @@
             			<manifestEntries>
               				<!-- Add the pi4j in runtime. -->
               				<Class-Path>${pi.pi4j.Directory}/pi4j-core.jar</Class-Path>
-            				</manifestEntries>
+            			</manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>

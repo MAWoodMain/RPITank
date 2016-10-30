@@ -40,7 +40,7 @@ public class MPU9250 extends NineDOF
 
     private void selfTest() throws IOException, InterruptedException
     {
-
+    	System.out.println("selfTest");
         byte FS = 0; 
         //int bytesRead =0;
 
@@ -162,10 +162,12 @@ public class MPU9250 extends NineDOF
         System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
         System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
         System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5] + "%");
+        System.out.println("End selfTest");
     }
 
     private void calibrateGyroAcc() throws IOException, InterruptedException
     {
+    	System.out.println("calibrateGyroAcc");
         // Write a one to bit 7 reset bit; toggle reset device
         mpu9250.write(Registers.PWR_MGMT_1.getAddress(),(byte)0x80);
         Thread.sleep(100);
@@ -304,11 +306,12 @@ public class MPU9250 extends NineDOF
         accBias[0] = (float)accelBiasl[0]/(float)accelSensitivity;
         accBias[1] = (float)accelBiasl[1]/(float)accelSensitivity;
         accBias[2] = (float)accelBiasl[2]/(float)accelSensitivity;
-
+    	System.out.println("End calibrateGyroAcc");
     }
 
     private void initMPU9250() throws IOException, InterruptedException
     {
+    	System.out.println("initMPU9250");
         // wake up device
         // Clear sleep mode bit (6), enable all sensors
         mpu9250.write(Registers.PWR_MGMT_1.getAddress(), (byte)0x00);
@@ -366,10 +369,12 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.INT_PIN_CFG.getAddress(), (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
         mpu9250.write(Registers.INT_ENABLE.getAddress(), (byte)0x01);  // Enable data ready (bit 0) interrupt
         Thread.sleep(100);
+    	System.out.println("End initMPU9250");
     }
 
     private void initAK8963() throws InterruptedException, IOException
     {
+    	System.out.println("initAK8963");
         // First extract the factory calibration for each magnetometer axis
 
         ak8963.write(Registers.AK8963_CNTL.getAddress(),(byte) 0x00); // Power down magnetometer
@@ -387,10 +392,13 @@ public class MPU9250 extends NineDOF
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
         ak8963.write(Registers.AK8963_CNTL.getAddress(), (byte)(MagScale.MFS_16BIT.getValue() << 4 | magMode.getMode())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
+    	System.out.println("End initAK8963");
     }
 
     private void calibrateMag() throws InterruptedException, IOException
     {
+    	System.out.println("calibrateMag");
+
         int  mag_bias[] = {0, 0, 0}, mag_scale[] = {0, 0, 0};
         short mag_max[] = {(short)0x8000, (short)0x8000, (short)0x8000},
         		mag_min[] = {(short)0x7FFF, (short)0x7FFF, (short)0x7FFF},
@@ -433,7 +441,7 @@ public class MPU9250 extends NineDOF
         magScaling[1] = avg_rad/((float)mag_scale[1]);
         magScaling[2] = avg_rad/((float)mag_scale[2]);
 
-        System.out.println("Mag Calibration done!");
+        System.out.println("End calibrateMag");
     }
 
     @Override
