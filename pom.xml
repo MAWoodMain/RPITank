@@ -23,6 +23,7 @@
 		<!-- Project specific Pi Properties -->
 		<pi.deployDirectory>/home/pi/artifacts</pi.deployDirectory>
 		<pi.pi4j.Directory>/opt/pi4j/lib</pi.pi4j.Directory>
+		<pi.pi4j.Version>1.2-SNAPSHOT</pi.pi4j.Version>
 		<pi.main.class>main.MPU9250Test</pi.main.class>
   	</properties>
   	
@@ -42,11 +43,16 @@
         <dependency>
             <groupId>com.pi4j</groupId>
             <artifactId>pi4j-core</artifactId>
-            <version>1.2-SNAPSHOT</version>
+            <version>${pi.pi4j.Version}</version>
         </dependency>
       </dependencies>
 
     <build>
+    	<directory>target</directory>
+    	<outputDirectory>target/classes</outputDirectory>
+    	<finalName>${project.artifactId}-${project.version}</finalName>
+    	<testOutputDirectory>target/test-classes</testOutputDirectory>
+    	<sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
