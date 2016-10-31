@@ -335,27 +335,33 @@ public class MPU9250 extends NineDOF
 
         // Set gyroscope full scale range
         // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-        byte c = (byte) mpu9250.read(Registers.GYRO_CONFIG.getAddress()); // get current GYRO_CONFIG register value
-        // c = c & ~0xE0; // Clear self-test bits [7:5]
+        byte c = mpu9250.read(Registers.GYRO_CONFIG.getAddress()); // get current GYRO_CONFIG register value
+        System.out.println("original:"+byteToString(c));
+        c = (byte)(c & ~0xE0); // Clear self-test bits [7:5]  ####
+        System.out.println("clear self test:"+byteToString(c));
         c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
+        System.out.println("lear Fchoice:"+byteToString(c));
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
-        c = (byte)(c | gyrScale.getValue() << 3); // Set full scale range for the gyro
+        System.out.println("Clear AFSoriginal:"+byteToString(c));
+        System.out.println("gyrScale:"+gyrScale.getValue());
+       c = (byte)(c | gyrScale.getValue() ); // Set full scale range for the gyro #### does not require shifting!!!!
+       System.out.println("set scale:"+byteToString(c));
         // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), c ); // Write new GYRO_CONFIG value to register
 
         // Set accelerometer full-scale range configuration
-        c = (byte) mpu9250.read(Registers.ACCEL_CONFIG.getAddress()); // get current ACCEL_CONFIG register value
-        // c = c & ~0xE0; // Clear self-test bits [7:5]
+        c = mpu9250.read(Registers.ACCEL_CONFIG.getAddress()); // get current ACCEL_CONFIG register value
+        c = (byte)(c & ~0xE0); // Clear self-test bits [7:5] ####
         c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
-        c = (byte)(c | accScale.getValue() << 3); // Set full scale range for the accelerometer
+        c = (byte)(c | accScale.getValue() ); // Set full scale range for the accelerometer #### does not require shifting!!!!
         mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), c); // Write new ACCEL_CONFIG register value
 
         // Set accelerometer sample rate configuration
         // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
         // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
-        c = (byte) mpu9250.read(Registers.ACCEL_CONFIG2.getAddress()); // get current ACCEL_CONFIG2 register value
+        c = mpu9250.read(Registers.ACCEL_CONFIG2.getAddress()); // get current ACCEL_CONFIG2 register value
         c = (byte)(c & ~0x0F); // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
-        c = (byte)(c | 0x03);  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
+        c = (byte)(c | 0x03);  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz 
         mpu9250.write(Registers.ACCEL_CONFIG2.getAddress(), c); // Write new ACCEL_CONFIG2 register value
 
         // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates,
@@ -542,16 +548,15 @@ public class MPU9250 extends NineDOF
     }
     public String byteToString(byte b)
     {
-    	String s = "";
-    	for (byte i = 7; i>=0; i--){
-    		if (( b & 2^i) != 0) s = s+"1"; else s=s+"0";
-    	}
+    	String s = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
     	return s;  	
     }
     public void outputConfigRegisters()
     {
     	try {
-			System.out.println("CONFIG:"+byteToString(mpu9250.read(Registers.CONFIG.getAddress())));
+    		//System.out.println(	 byteToString((byte)0x80)+byteToString((byte)0x40)+byteToString((byte)0x20)+byteToString((byte)0x10)
+    		//					+byteToString((byte)0x08)+byteToString((byte)0x04)+byteToString((byte)0x02)+byteToString((byte)0x01));
+			System.out.println("CONFIG            :"+byteToString(mpu9250.read(Registers.CONFIG.getAddress())));
 			System.out.println("GYRO_CONFIG       :"+byteToString(mpu9250.read(Registers.GYRO_CONFIG.getAddress())));
 			System.out.println("ACCEL_CONFIG      :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG.getAddress())));
 			System.out.println("ACCEL_CONFIG2     :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG2.getAddress())));
