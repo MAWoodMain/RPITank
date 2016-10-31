@@ -257,7 +257,7 @@ public class MPU9250 extends NineDOF
   		dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity;  
   		dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
   		dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
-         */
+        */ 
 
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
         // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -368,6 +368,7 @@ public class MPU9250 extends NineDOF
         //mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
         mpu9250.write(Registers.INT_PIN_CFG.getAddress(), (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
         mpu9250.write(Registers.INT_ENABLE.getAddress(), (byte)0x01);  // Enable data ready (bit 0) interrupt
+        outputConfigRegisters();
         Thread.sleep(100);
     	System.out.println("End initMPU9250");
     }
@@ -538,5 +539,42 @@ public class MPU9250 extends NineDOF
         	registers[i] = (short) ((rawData[i*2] << 8) | rawData[i*2+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
         }
     	return registers;
+    }
+    public String byteToString(byte b)
+    {
+    	String s = "";
+    	for (byte i = 7; i>=0; i--){
+    		if (( b & 2^i) != 0) s = s+"1"; else s=s+"0";
+    	}
+    	return s;  	
+    }
+    public void outputConfigRegisters()
+    {
+    	try {
+			System.out.println("CONFIG:"+byteToString(mpu9250.read(Registers.CONFIG.getAddress())));
+			System.out.println("GYRO_CONFIG       :"+byteToString(mpu9250.read(Registers.GYRO_CONFIG.getAddress())));
+			System.out.println("ACCEL_CONFIG      :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG.getAddress())));
+			System.out.println("ACCEL_CONFIG2     :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG2.getAddress())));
+			System.out.println("LP_ACCEL_ODR      :"+byteToString(mpu9250.read(Registers.LP_ACCEL_ODR.getAddress())));
+			System.out.println("WOM_THR           :"+byteToString(mpu9250.read(Registers.WOM_THR.getAddress())));
+			System.out.println("MOT_DUR           :"+byteToString(mpu9250.read(Registers.MOT_DUR.getAddress())));
+			System.out.println("ZMOT_THR          :"+byteToString(mpu9250.read(Registers.ZMOT_THR.getAddress())));
+			System.out.println("FIFO_EN           :"+byteToString(mpu9250.read(Registers.FIFO_EN.getAddress())));
+			System.out.println("I2C_MST_CTRL      :"+byteToString(mpu9250.read(Registers.I2C_MST_CTRL.getAddress())));
+			System.out.println("I2C_MST_STATUS    :"+byteToString(mpu9250.read(Registers.I2C_MST_STATUS.getAddress())));
+			System.out.println("NT_PIN_CFG        :"+byteToString(mpu9250.read(Registers.INT_PIN_CFG.getAddress())));
+			System.out.println("INT_ENABLE        :"+byteToString(mpu9250.read(Registers.INT_ENABLE.getAddress())));
+			System.out.println("INT_STATUS        :"+byteToString(mpu9250.read(Registers.INT_STATUS.getAddress())));
+			System.out.println("I2C_MST_DELAY_CTRL:"+byteToString(mpu9250.read(Registers.I2C_MST_DELAY_CTRL.getAddress())));
+			System.out.println("SIGNAL_PATH_RESET :"+byteToString(mpu9250.read(Registers.SIGNAL_PATH_RESET.getAddress())));
+			System.out.println("MOT_DETECT_CTRL   :"+byteToString(mpu9250.read(Registers.MOT_DETECT_CTRL.getAddress())));
+			System.out.println("USER_CTRL         :"+byteToString(mpu9250.read(Registers.USER_CTRL.getAddress())));
+			System.out.println("PWR_MGMT_1        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_1.getAddress())));
+			System.out.println("PWR_MGMT_2        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_2.getAddress())));
+			System.out.println("WHO_AM_I_MPU9250  :"+byteToString(mpu9250.read(Registers.WHO_AM_I_MPU9250.getAddress())));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 }
