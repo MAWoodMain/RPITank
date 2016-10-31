@@ -24,13 +24,13 @@ public class MPU9250Test {
             MPU9250 mpu9250 = new MPU9250(
                     new Pi4jI2CDevice(bus.getDevice(0x68)), // MPU9250 I2C device
                     new Pi4jI2CDevice(bus.getDevice(0x0C)), // ak8963 I2C 
-                    100,                                    // sample rate
+                    10,                                    // sample rate
                     100); 									// sample size
             System.out.println("MPU9250 created");
             Thread sensor = new Thread(mpu9250);
             sensor.start();
 
-            Thread.sleep(10000);
+            Thread.sleep(15000);
             System.out.println("back from sleep");
             int ac = mpu9250.getAccelerometerReadingCount();
             System.out.println("AccReadingCount "+ac);
