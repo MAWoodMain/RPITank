@@ -5,6 +5,7 @@ import devices.sensors.NineDOF;
 import devices.sensors.dataTypes.TimestampedData3D;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * RPITank
@@ -49,15 +50,15 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.CONFIG.getAddress(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
         Thread.sleep(2);
         // Set full scale range for the gyro to 250 dps
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(),(byte)(1<<FS));//GyrScale.GFS_250DPS.getX());
+        mpu9250.write(Registers.GYRO_CONFIG.getAddress(),(byte)(FS<<3));//GyrScale.GFS_250DPS.getX());
         Thread.sleep(2);
         // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         mpu9250.write(Registers.ACCEL_CONFIG2.getAddress(),(byte)0x02);
         Thread.sleep(2);
         // Set full scale range for the accelerometer to 2 g
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(),(byte)(1<<FS));// AccScale.AFS_2G.getX());
+        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(),(byte)(FS<<3));// AccScale.AFS_2G.getX());
         Thread.sleep(2);
-
+        //outputConfigRegisters();
         final int TEST_LENGTH = 200;
 
         int[] aAvg = new int[3]; //32 bit integer to accumulate
@@ -93,7 +94,7 @@ public class MPU9250 extends NineDOF
         Thread.sleep(2);
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
-
+        //outputConfigRegisters();
         int[] aSTAvg = new int[3]; // cumulative values hence int to avoid overflow
         int[] gSTAvg = new int[3];
         
@@ -124,23 +125,23 @@ public class MPU9250 extends NineDOF
         Thread.sleep(2);
         mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), AccScale.AFS_2G.getValue());
         Thread.sleep(25); // Delay a while to let the device stabilise
+        //outputConfigRegisters();
+        short[] selfTest = new short[6];
 
-        byte[] selfTest = new byte[6];
-
-        selfTest[0] = mpu9250.read(Registers.SELF_TEST_X_ACCEL.getAddress());
+        selfTest[0] = (short)((short)mpu9250.read(Registers.SELF_TEST_X_ACCEL.getAddress()) & 0xFF);
         Thread.sleep(2);
-        selfTest[1] = mpu9250.read(Registers.SELF_TEST_Y_ACCEL.getAddress());
+        selfTest[1] = (short)((short)mpu9250.read(Registers.SELF_TEST_Y_ACCEL.getAddress()) & 0xFF);
         Thread.sleep(2);
-        selfTest[2] = mpu9250.read(Registers.SELF_TEST_Z_ACCEL.getAddress());
+        selfTest[2] = (short)((short)mpu9250.read(Registers.SELF_TEST_Z_ACCEL.getAddress()) & 0xFF);
         Thread.sleep(2);
         
-        selfTest[3] = mpu9250.read(Registers.SELF_TEST_X_GYRO.getAddress());
+        selfTest[3] = (short)((short)mpu9250.read(Registers.SELF_TEST_X_GYRO.getAddress()) & 0xFF);
         Thread.sleep(2);
-        selfTest[4] = mpu9250.read(Registers.SELF_TEST_Y_GYRO.getAddress());
+        selfTest[4] = (short)((short)mpu9250.read(Registers.SELF_TEST_Y_GYRO.getAddress()) & 0xFF);
         Thread.sleep(2);
-        selfTest[5] = mpu9250.read(Registers.SELF_TEST_Z_GYRO.getAddress());
+        selfTest[5] = (short)((short)mpu9250.read(Registers.SELF_TEST_Z_GYRO.getAddress()) & 0xFF);
         Thread.sleep(2);
-
+        System.out.println(Arrays.toString(selfTest));
         float[] factoryTrim = new float[6];
 
         factoryTrim[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[0] - 1f);
@@ -252,12 +253,11 @@ public class MPU9250 extends NineDOF
         mpu9250.write(Registers.YG_OFFSET_L.getAddress(), buffer[3]);
         mpu9250.write(Registers.ZG_OFFSET_H.getAddress(), buffer[4]);
         mpu9250.write(Registers.ZG_OFFSET_L.getAddress(), buffer[5]);
-        /*
+        
          // Output scaled gyro biases for display in the main program
-  		dest1[0] = (float) gyro_bias[0]/(float) gyrosensitivity;  
-  		dest1[1] = (float) gyro_bias[1]/(float) gyrosensitivity;
-  		dest1[2] = (float) gyro_bias[2]/(float) gyrosensitivity;
-        */ 
+  		gyrBias[0] = (float) gyroBias[0]/(float) gyrosensitivity;  
+  		gyrBias[1] = (float) gyroBias[1]/(float) gyrosensitivity;
+  		gyrBias[2] = (float) gyroBias[2]/(float) gyrosensitivity;
 
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
         // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -334,19 +334,13 @@ public class MPU9250 extends NineDOF
         // determined inset in CONFIG above
 
         // Set gyroscope full scale range
-        // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
+        // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3 (not in java!)
         byte c = mpu9250.read(Registers.GYRO_CONFIG.getAddress()); // get current GYRO_CONFIG register value
-        System.out.println("original:"+byteToString(c));
         c = (byte)(c & ~0xE0); // Clear self-test bits [7:5]  ####
-        System.out.println("clear self test:"+byteToString(c));
         c = (byte)(c & ~0x02); // Clear Fchoice bits [1:0]
-        System.out.println("lear Fchoice:"+byteToString(c));
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
-        System.out.println("Clear AFSoriginal:"+byteToString(c));
-        System.out.println("gyrScale:"+gyrScale.getValue());
-       c = (byte)(c | gyrScale.getValue() ); // Set full scale range for the gyro #### does not require shifting!!!!
-       System.out.println("set scale:"+byteToString(c));
-        // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
+        c = (byte)(c | gyrScale.getValue() ); // Set full scale range for the gyro GFS_2000DP = 0x18 = 24 #### does not require shifting!!!!
+        c = (byte)(c | 0x00); // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
         mpu9250.write(Registers.GYRO_CONFIG.getAddress(), c ); // Write new GYRO_CONFIG value to register
 
         // Set accelerometer full-scale range configuration
@@ -542,7 +536,7 @@ public class MPU9250 extends NineDOF
         short[] registers = new short[regCount];
         for (int i=0;i<regCount;i++)		
         {
-        	registers[i] = (short) ((rawData[i*2] << 8) | rawData[i*2+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+        	registers[i] = (short) (((short)rawData[i*2] << 8) | rawData[(i*2)+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
         }
     	return registers;
     }
@@ -577,6 +571,7 @@ public class MPU9250 extends NineDOF
 			System.out.println("PWR_MGMT_1        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_1.getAddress())));
 			System.out.println("PWR_MGMT_2        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_2.getAddress())));
 			System.out.println("WHO_AM_I_MPU9250  :"+byteToString(mpu9250.read(Registers.WHO_AM_I_MPU9250.getAddress())));
+			System.out.println("SMPLRT_DIV        :"+byteToString(mpu9250.read(Registers.SMPLRT_DIV.getAddress())));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
