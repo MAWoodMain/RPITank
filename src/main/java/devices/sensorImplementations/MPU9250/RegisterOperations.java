@@ -102,6 +102,8 @@ public class RegisterOperations {
 
    void writeByteRegister(Registers r, byte rv)
    {
+	   System.out.print("Before - ");
+	   printByteRegister(r);
        try {
 		busDevice.write(r.getAddress(),rv);
        } catch (IOException e) {
@@ -112,5 +114,7 @@ public class RegisterOperations {
        } catch (InterruptedException e) {
 		e.printStackTrace();
        }
+	   System.out.print("After - ");
+	   printByteRegister(r);
    }
 }

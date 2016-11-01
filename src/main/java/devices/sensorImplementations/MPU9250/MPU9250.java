@@ -357,7 +357,7 @@ public class MPU9250 extends NineDOF
         //ro.writeByteRegister(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
         roMPU.writeByteRegister(Registers.INT_PIN_CFG, (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
         roMPU.writeByteRegister(Registers.INT_ENABLE, (byte)0x01);  // Enable data ready (bit 0) interrupt
-        roMPU.outputConfigRegisters();
+        //roMPU.outputConfigRegisters();
         Thread.sleep(100);
     	System.out.println("End initMPU9250");
     }
