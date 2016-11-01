@@ -22,21 +22,14 @@ public class MPU9250 extends NineDOF
     private short lastRawMagY;
     private short lastRawMagZ;
 
-    private final I2CImplementation mpu9250;
-    private final I2CImplementation ak8963;
     private final RegisterOperations roMPU;
     private final RegisterOperations roAK;
 
-    I2CImplementation getMpu9250() {
-		return mpu9250;
-	}
 
 	public MPU9250(I2CImplementation mpu9250,I2CImplementation ak8963,int sampleRate, int sampleSize) throws IOException, InterruptedException
     {
         super(sampleRate,sampleSize);
         // get device
-        this.mpu9250 = mpu9250;
-        this.ak8963 = ak8963;
         this.roMPU = new RegisterOperations(mpu9250);
         this.roAK = new RegisterOperations(ak8963);
 
@@ -374,20 +367,20 @@ public class MPU9250 extends NineDOF
     	System.out.println("initAK8963");
         // First extract the factory calibration for each magnetometer axis
 
-        ak8963.write(Registers.AK8963_CNTL.getAddress(),(byte) 0x00); // Power down magnetometer
+        roAK.writeByteRegister(Registers.AK8963_CNTL,(byte) 0x00); // Power down magnetometer
         Thread.sleep(10);
-        ak8963.write(Registers.AK8963_CNTL.getAddress(), (byte)0x0F); // Enter Fuse ROM access mode
+        roAK.writeByteRegister(Registers.AK8963_CNTL, (byte)0x0F); // Enter Fuse ROM access mode
         Thread.sleep(10);
-        byte rawData[] = ak8963.read(Registers.AK8963_ASAX.getAddress(), 3);  // Read the x-, y-, and z-axis calibration values
+        byte rawData[] = roAK.readByteRegisters(Registers.AK8963_ASAX, 3);  // Read the x-, y-, and z-axis calibration values
         magScaling[0] =  (float)(rawData[0] - 128)/256f + 1f;   // Return x-axis sensitivity adjustment values, etc.
         magScaling[1] =  (float)(rawData[1] - 128)/256f + 1f;
         magScaling[2] =  (float)(rawData[2] - 128)/256f + 1f;
-        ak8963.write(Registers.AK8963_CNTL.getAddress(), (byte)0x00); // Power down magnetometer
+        roAK.writeByteRegister(Registers.AK8963_CNTL, (byte)0x00); // Power down magnetometer
         Thread.sleep(10);
         // Configure the magnetometer for continuous read and highest resolution
         // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
         // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-        ak8963.write(Registers.AK8963_CNTL.getAddress(), (byte)(MagScale.MFS_16BIT.getValue() << 4 | magMode.getMode())); // Set magnetometer data resolution and sample ODR
+        roAK.writeByteRegister(Registers.AK8963_CNTL, (byte)(MagScale.MFS_16BIT.getValue() << 4 | magMode.getMode())); // Set magnetometer data resolution and sample ODR
         Thread.sleep(10);
     	System.out.println("End initAK8963");
     }
@@ -481,9 +474,9 @@ public class MPU9250 extends NineDOF
     @Override
     public void updateMagnetometerData() throws IOException
     {
-        byte newMagData = (byte) (ak8963.read(Registers.AK8963_ST1.getAddress()) & 0x01);
+        byte newMagData = (byte)(roAK.readByteRegister(Registers.AK8963_ST1) & 0x01);
         if (newMagData == 0) return;
-        byte[] buffer = ak8963.read(Registers.AK8963_ST1.getAddress(), 7);
+        byte[] buffer = roAK.readByteRegisters(Registers.AK8963_ST1, 7);
 
         byte c = buffer[6];
         if((c & 0x08) == 0)
@@ -503,7 +496,7 @@ public class MPU9250 extends NineDOF
 
             mag.add(new TimestampedData3D(x,y,z));
         }
-        ak8963.read(0x09);
+        roAK.readByteRegister(Registers.AK8963_ST2);// Data overflow bit 3 and data read error status bit 2
     }
 
     @Override

@@ -61,6 +61,27 @@ public class RegisterOperations {
     	printByteRegister(Registers.WHO_AM_I_MPU9250);
     	printByteRegister(Registers.SMPLRT_DIV);
     }
+   
+   byte readByteRegister(Registers r)
+   {
+	   try {
+		return busDevice.read(r.getAddress());
+	   } catch (IOException e) {
+		   e.printStackTrace();
+		   return (byte)0xFF;
+	   }
+   }
+   
+   byte[] readByteRegisters(Registers r, int byteCount)
+   {
+	   try {
+		return busDevice.read(r.getAddress(),byteCount);
+	   } catch (IOException e) {
+		   e.printStackTrace();
+		   return null;
+	   }
+   }
+
    /**
     * Reads the specified number of 16 bit Registers from a given device and address
     * @param address 	- the start address for the read
@@ -70,45 +91,26 @@ public class RegisterOperations {
     */
    short[] read16BitRegisters(Registers r, int regCount)
    {
-       byte rawData[] = null;
-		try {
-			rawData = busDevice.read(r.getAddress(), regCount*2);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
+       byte[] rawData = readByteRegisters(r, regCount*2);
        short[] registers = new short[regCount];
        for (int i=0;i<regCount;i++)		
        {
        	registers[i] = (short) (((short)rawData[i*2] << 8) | rawData[(i*2)+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
        }
-   	return registers;
+       return registers;
    }
 
-   byte readByteRegister(Registers r)
-   {
-	   try {
-		return busDevice.read(r.getAddress());
-	   } catch (IOException e) {
-		   e.printStackTrace();
-		   return (byte)0xFF;
-	   }
-	
-   }
    void writeByteRegister(Registers r, byte rv)
    {
        try {
 		busDevice.write(r.getAddress(),rv);
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
+       } catch (IOException e) {
 		e.printStackTrace();
-	} // Set gyro sample rate to 1 kHz
+       }
        try {
 		Thread.sleep(2); // delay to allow register to settle
-	} catch (InterruptedException e) {
-		// TODO Auto-generated catch block
+       } catch (InterruptedException e) {
 		e.printStackTrace();
-	}
-
+       }
    }
 }
