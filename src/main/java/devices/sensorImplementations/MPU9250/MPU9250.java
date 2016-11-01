@@ -208,9 +208,9 @@ public class MPU9250 extends NineDOF
             accelBiasl[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
             accelBiasl[1] += tempBias[1];
             accelBiasl[2] += tempBias[2];
-            gyroBias[0] += tempBias[4];
-            gyroBias[1] += tempBias[5];
-            gyroBias[2] += tempBias[6];
+            gyroBias[0] += tempBias[3];
+            gyroBias[1] += tempBias[4];
+            gyroBias[2] += tempBias[5];
         }
 
         accelBiasl[0] /= sampleCount; // Normalise sums to get average count biases
