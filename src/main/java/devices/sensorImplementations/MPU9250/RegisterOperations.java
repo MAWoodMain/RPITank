@@ -68,7 +68,7 @@ public class RegisterOperations {
     * @return 			- an array of shorts (16 bit signed values) holding the registers
     * Each registers is constructed from reading and combining 2 bytes, the first byte forms the more significant part of the register 
     */
-   public short[] read16BitRegisters(I2CImplementation device, int address, int regCount)
+   short[] read16BitRegisters(I2CImplementation device, int address, int regCount)
    {
        byte rawData[] = null;
 		try {
@@ -85,4 +85,20 @@ public class RegisterOperations {
    	return registers;
    }
 
+   void writeByteRegister(Registers r, byte rv)
+   {
+       try {
+		mpu9250.write(r.getAddress(),rv);
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	} // Set gyro sample rate to 1 kHz
+       try {
+		Thread.sleep(2); // delay to allow register to settle
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+
+   }
 }

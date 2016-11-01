@@ -3,7 +3,6 @@ package devices.sensorImplementations.MPU9250;
 import devices.I2C.I2CImplementation;
 import devices.sensors.NineDOF;
 import devices.sensors.dataTypes.TimestampedData3D;
-import devices.sensorImplementations.MPU9250.RegisterOperations.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -50,22 +49,12 @@ public class MPU9250 extends NineDOF
     {
     	System.out.println("selfTest");
         byte FS = 0; 
-        //int bytesRead =0;
 
-        mpu9250.write(Registers.SMPLRT_DIV.getAddress(),(byte)0x00); // Set gyro sample rate to 1 kHz
-        Thread.sleep(2);
-        mpu9250.write(Registers.CONFIG.getAddress(),(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
-        Thread.sleep(2);
-        // Set full scale range for the gyro to 250 dps
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(),(byte)(FS<<3));//GyrScale.GFS_250DPS.getX());
-        Thread.sleep(2);
-        // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
-        mpu9250.write(Registers.ACCEL_CONFIG2.getAddress(),(byte)0x02);
-        Thread.sleep(2);
-        // Set full scale range for the accelerometer to 2 g
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(),(byte)(FS<<3));// AccScale.AFS_2G.getX());
-        Thread.sleep(2);
-        //outputConfigRegisters();
+        ro.writeByteRegister(Registers.SMPLRT_DIV,(byte)0x00); // Set gyro sample rate to 1 kHz
+        ro.writeByteRegister(Registers.CONFIG,(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+        ro.writeByteRegister(Registers.GYRO_CONFIG,GyrScale.GFS_250DPS.getValue()); // Set full scale range for the gyro to 250 dps (was FS<<3) 
+        ro.writeByteRegister(Registers.ACCEL_CONFIG2,(byte)0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
+        ro.writeByteRegister(Registers.ACCEL_CONFIG,(byte)AccScale.AFS_2G.getValue());// Set full scale range for the accelerometer to 2 g (was FS<<3 )
         final int TEST_LENGTH = 200;
 
         int[] aAvg = new int[3]; //32 bit integer to accumulate
@@ -97,9 +86,8 @@ public class MPU9250 extends NineDOF
             gAvg[i] /= TEST_LENGTH;
         }
         // Configure the accelerometer for self-test
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
-        Thread.sleep(2);
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(), (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
+        ro.writeByteRegister(Registers.ACCEL_CONFIG, (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
+        ro.writeByteRegister(Registers.GYRO_CONFIG, (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
         //outputConfigRegisters();
         int[] aSTAvg = new int[3]; // cumulative values hence int to avoid overflow
@@ -128,9 +116,8 @@ public class MPU9250 extends NineDOF
         }
 
         Thread.sleep(2);
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(), GyrScale.GFS_250DPS.getValue());
-        Thread.sleep(2);
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), AccScale.AFS_2G.getValue());
+        ro.writeByteRegister(Registers.GYRO_CONFIG, GyrScale.GFS_250DPS.getValue());
+        ro.writeByteRegister(Registers.ACCEL_CONFIG, AccScale.AFS_2G.getValue());
         Thread.sleep(25); // Delay a while to let the device stabilise
         //outputConfigRegisters();
         short[] selfTest = new short[6];
@@ -177,41 +164,41 @@ public class MPU9250 extends NineDOF
     {
     	System.out.println("calibrateGyroAcc");
         // Write a one to bit 7 reset bit; toggle reset device
-        mpu9250.write(Registers.PWR_MGMT_1.getAddress(),(byte)0x80);
+        ro.writeByteRegister(Registers.PWR_MGMT_1,(byte)0x80);
         Thread.sleep(100);
 
         // get stable time source; Auto select clock source to be PLL gyroscope reference if ready
         // else use the internal oscillator, bits 2:0 = 001
-        mpu9250.write(Registers.PWR_MGMT_1.getAddress(),(byte)0x01);
-        mpu9250.write(Registers.PWR_MGMT_2.getAddress(),(byte)0x00);
+        ro.writeByteRegister(Registers.PWR_MGMT_1,(byte)0x01);
+        ro.writeByteRegister(Registers.PWR_MGMT_2,(byte)0x00);
         Thread.sleep(200);
 
 
         // Configure device for bias calculation
-        mpu9250.write(Registers.INT_ENABLE.getAddress(),(byte) 0x00);   // Disable all interrupts
-        mpu9250.write(Registers.FIFO_EN.getAddress(),(byte) 0x00);      // Disable FIFO
-        mpu9250.write(Registers.PWR_MGMT_1.getAddress(),(byte) 0x00);   // Turn on internal clock source
-        mpu9250.write(Registers.I2C_MST_CTRL.getAddress(),(byte) 0x00); // Disable I2C master
-        mpu9250.write(Registers.USER_CTRL.getAddress(),(byte) 0x00);    // Disable FIFO and I2C master modes
-        mpu9250.write(Registers.USER_CTRL.getAddress(),(byte) 0x0C);    // Reset FIFO and DMP
+        ro.writeByteRegister(Registers.INT_ENABLE,(byte) 0x00);   // Disable all interrupts
+        ro.writeByteRegister(Registers.FIFO_EN,(byte) 0x00);      // Disable FIFO
+        ro.writeByteRegister(Registers.PWR_MGMT_1,(byte) 0x00);   // Turn on internal clock source
+        ro.writeByteRegister(Registers.I2C_MST_CTRL,(byte) 0x00); // Disable I2C master
+        ro.writeByteRegister(Registers.USER_CTRL,(byte) 0x00);    // Disable FIFO and I2C master modes
+        ro.writeByteRegister(Registers.USER_CTRL,(byte) 0x0C);    // Reset FIFO and DMP
         Thread.sleep(15);
 
         // Configure MPU6050 gyro and accelerometer for bias calculation
-        mpu9250.write(Registers.CONFIG.getAddress(),(byte) 0x01);       // Set low-pass filter to 188 Hz
-        mpu9250.write(Registers.SMPLRT_DIV.getAddress(),(byte) 0x00);   // Set sample rate to 1 kHz
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(),(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(),(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
+        ro.writeByteRegister(Registers.CONFIG,(byte) 0x01);       // Set low-pass filter to 188 Hz
+        ro.writeByteRegister(Registers.SMPLRT_DIV,(byte) 0x00);   // Set sample rate to 1 kHz
+        ro.writeByteRegister(Registers.GYRO_CONFIG,(byte) 0x00);  // Set gyro full-scale to 250 degrees per second, maximum sensitivity
+        ro.writeByteRegister(Registers.ACCEL_CONFIG,(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
 
         short gyrosensitivity = 131;     // = 131 LSB/degrees/sec
         short accelSensitivity = 16384;  // = 16384 LSB/g
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
-        mpu9250.write(Registers.USER_CTRL.getAddress(),(byte) 0x40);   // Enable FIFO
-        mpu9250.write(Registers.FIFO_EN.getAddress(),(byte) 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
+        ro.writeByteRegister(Registers.USER_CTRL,(byte) 0x40);   // Enable FIFO
+        ro.writeByteRegister(Registers.FIFO_EN,(byte) 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
         Thread.sleep(40); // accumulate 40 samples in 40 milliseconds = 480 bytes
 
         // At end of sample accumulation, turn off FIFO sensor read
-        mpu9250.write(Registers.FIFO_EN.getAddress(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
+        ro.writeByteRegister(Registers.FIFO_EN,(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
 
         short packetCount = ro.read16BitRegisters(mpu9250, Registers.FIFO_COUNTH.getAddress(), 1)[0];
         int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
@@ -254,12 +241,12 @@ public class MPU9250 extends NineDOF
 
 
         // Push gyro biases to hardware registers
-        mpu9250.write(Registers.XG_OFFSET_H.getAddress(), buffer[0]);
-        mpu9250.write(Registers.XG_OFFSET_L.getAddress(), buffer[1]);
-        mpu9250.write(Registers.YG_OFFSET_H.getAddress(), buffer[2]);
-        mpu9250.write(Registers.YG_OFFSET_L.getAddress(), buffer[3]);
-        mpu9250.write(Registers.ZG_OFFSET_H.getAddress(), buffer[4]);
-        mpu9250.write(Registers.ZG_OFFSET_L.getAddress(), buffer[5]);
+        ro.writeByteRegister(Registers.XG_OFFSET_H, buffer[0]);
+        ro.writeByteRegister(Registers.XG_OFFSET_L, buffer[1]);
+        ro.writeByteRegister(Registers.YG_OFFSET_H, buffer[2]);
+        ro.writeByteRegister(Registers.YG_OFFSET_L, buffer[3]);
+        ro.writeByteRegister(Registers.ZG_OFFSET_H, buffer[4]);
+        ro.writeByteRegister(Registers.ZG_OFFSET_L, buffer[5]);
         
          // Output scaled gyro biases for display in the main program
   		gyrBias[0] = (float) gyroBias[0]/(float) gyrosensitivity;  
@@ -301,12 +288,12 @@ public class MPU9250 extends NineDOF
         // Apparently this is not working for the acceleration biases in the MPU-9250
         // Are we handling the temperature correction bit properly?
         // Push accelerometer biases to hardware registers
-        /*mpu9250.write(XA_OFFSET_H.getX(), buffer[0]);
-        mpu9250.write(XA_OFFSET_L.getX(), buffer[1]);
-        mpu9250.write(YA_OFFSET_H.getX(), buffer[2]);
-        mpu9250.write(YA_OFFSET_L.getX(), buffer[3]);
-        mpu9250.write(ZA_OFFSET_H.getX(), buffer[4]);
-        mpu9250.write(ZA_OFFSET_L.getX(), buffer[5]);
+        /*ro.writeByteRegister(XA_OFFSET_H.getX(), buffer[0]);
+        ro.writeByteRegister(XA_OFFSET_L.getX(), buffer[1]);
+        ro.writeByteRegister(YA_OFFSET_H.getX(), buffer[2]);
+        ro.writeByteRegister(YA_OFFSET_L.getX(), buffer[3]);
+        ro.writeByteRegister(ZA_OFFSET_H.getX(), buffer[4]);
+        ro.writeByteRegister(ZA_OFFSET_L.getX(), buffer[5]);
         */
 
 
@@ -321,11 +308,11 @@ public class MPU9250 extends NineDOF
     	System.out.println("initMPU9250");
         // wake up device
         // Clear sleep mode bit (6), enable all sensors
-        mpu9250.write(Registers.PWR_MGMT_1.getAddress(), (byte)0x00);
+        ro.writeByteRegister(Registers.PWR_MGMT_1, (byte)0x00);
         Thread.sleep(100); // Wait for all registers to reset
 
         // get stable time source
-        mpu9250.write(Registers.PWR_MGMT_1.getAddress(), (byte)0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
+        ro.writeByteRegister(Registers.PWR_MGMT_1, (byte)0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
         Thread.sleep(200);
 
         // Configure Gyro and Thermometer
@@ -334,10 +321,10 @@ public class MPU9250 extends NineDOF
         // be higher than 1 / 0.0059 = 170 Hz
         // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
         // With the MPU9250_Pi4j, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
-        mpu9250.write(Registers.CONFIG.getAddress(), (byte)0x03);
+        ro.writeByteRegister(Registers.CONFIG, (byte)0x03);
 
         // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
-        mpu9250.write(Registers.SMPLRT_DIV.getAddress(), (byte)0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
+        ro.writeByteRegister(Registers.SMPLRT_DIV, (byte)0x04);  // Use a 200 Hz rate; a rate consistent with the filter update rate
         // determined inset in CONFIG above
 
         // Set gyroscope full scale range
@@ -348,14 +335,14 @@ public class MPU9250 extends NineDOF
         c = (byte)(c & ~0x18); // Clear AFS bits [4:3]
         c = (byte)(c | gyrScale.getValue() ); // Set full scale range for the gyro GFS_2000DP = 0x18 = 24 #### does not require shifting!!!!
         c = (byte)(c | 0x00); // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
-        mpu9250.write(Registers.GYRO_CONFIG.getAddress(), c ); // Write new GYRO_CONFIG value to register
+        ro.writeByteRegister(Registers.GYRO_CONFIG, c ); // Write new GYRO_CONFIG value to register
 
         // Set accelerometer full-scale range configuration
         c = mpu9250.read(Registers.ACCEL_CONFIG.getAddress()); // get current ACCEL_CONFIG register value
         c = (byte)(c & ~0xE0); // Clear self-test bits [7:5] ####
         c = (byte)(c & ~0x18);  // Clear AFS bits [4:3]
         c = (byte)(c | accScale.getValue() ); // Set full scale range for the accelerometer #### does not require shifting!!!!
-        mpu9250.write(Registers.ACCEL_CONFIG.getAddress(), c); // Write new ACCEL_CONFIG register value
+        ro.writeByteRegister(Registers.ACCEL_CONFIG, c); // Write new ACCEL_CONFIG register value
 
         // Set accelerometer sample rate configuration
         // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
@@ -363,7 +350,7 @@ public class MPU9250 extends NineDOF
         c = mpu9250.read(Registers.ACCEL_CONFIG2.getAddress()); // get current ACCEL_CONFIG2 register value
         c = (byte)(c & ~0x0F); // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])
         c = (byte)(c | 0x03);  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz 
-        mpu9250.write(Registers.ACCEL_CONFIG2.getAddress(), c); // Write new ACCEL_CONFIG2 register value
+        ro.writeByteRegister(Registers.ACCEL_CONFIG2, c); // Write new ACCEL_CONFIG2 register value
 
         // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates,
         // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
@@ -372,9 +359,9 @@ public class MPU9250 extends NineDOF
         // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
         // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips
         // can join the I2C bus and all can be controlled by the Arduino as master
-        //mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
-        mpu9250.write(Registers.INT_PIN_CFG.getAddress(), (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
-        mpu9250.write(Registers.INT_ENABLE.getAddress(), (byte)0x01);  // Enable data ready (bit 0) interrupt
+        //ro.writeByteRegister(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
+        ro.writeByteRegister(Registers.INT_PIN_CFG, (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
+        ro.writeByteRegister(Registers.INT_ENABLE, (byte)0x01);  // Enable data ready (bit 0) interrupt
         ro.outputConfigRegisters();
         Thread.sleep(100);
     	System.out.println("End initMPU9250");
