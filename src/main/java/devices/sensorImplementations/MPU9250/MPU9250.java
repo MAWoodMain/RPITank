@@ -3,6 +3,7 @@ package devices.sensorImplementations.MPU9250;
 import devices.I2C.I2CImplementation;
 import devices.sensors.NineDOF;
 import devices.sensors.dataTypes.TimestampedData3D;
+import devices.sensorImplementations.MPU9250.RegisterOperations.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -24,13 +25,19 @@ public class MPU9250 extends NineDOF
 
     private final I2CImplementation mpu9250;
     private final I2CImplementation ak8963;
+    private final RegisterOperations ro;
 
-    public MPU9250(I2CImplementation mpu9250,I2CImplementation ak8963,int sampleRate, int sampleSize) throws IOException, InterruptedException
+    I2CImplementation getMpu9250() {
+		return mpu9250;
+	}
+
+	public MPU9250(I2CImplementation mpu9250,I2CImplementation ak8963,int sampleRate, int sampleSize) throws IOException, InterruptedException
     {
         super(sampleRate,sampleSize);
         // get device
         this.mpu9250 = mpu9250;
         this.ak8963 = ak8963;
+        this.ro = new RegisterOperations(mpu9250);
 
         selfTest();
         calibrateGyroAcc();
@@ -71,13 +78,13 @@ public class MPU9250 extends NineDOF
         }
         for(int s=0; s<TEST_LENGTH; s++)
         {
-            registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
+            registers = ro.read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
             aAvg[0] += registers[0];
             aAvg[1] += registers[1];
             aAvg[2] += registers[2];
             Thread.sleep(2);
 
-            registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
+            registers = ro.read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
             gAvg[0] += registers[0];
             gAvg[1] += registers[1];
             gAvg[2] += registers[2];
@@ -101,13 +108,13 @@ public class MPU9250 extends NineDOF
         // get average self-test values of gyro and accelerometer
         for(int s=0; s<TEST_LENGTH; s++) 
         {
-            registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
+            registers = ro.read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
             aSTAvg[0] += registers[0];
             aSTAvg[1] += registers[1];
             aSTAvg[2] += registers[2];
             Thread.sleep(2);
 
-            registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
+            registers = ro.read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
             gSTAvg[0] += registers[0];
             gSTAvg[1] += registers[1];
             gSTAvg[2] += registers[2];
@@ -206,7 +213,7 @@ public class MPU9250 extends NineDOF
         // At end of sample accumulation, turn off FIFO sensor read
         mpu9250.write(Registers.FIFO_EN.getAddress(),(byte) 0x00);        // Disable gyro and accelerometer sensors for FIFO
 
-        short packetCount = read16BitRegisters(mpu9250, Registers.FIFO_COUNTH.getAddress(), 1)[0];
+        short packetCount = ro.read16BitRegisters(mpu9250, Registers.FIFO_COUNTH.getAddress(), 1)[0];
         int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
 
         int[] accelBiasl = new int[]{0,0,0}; 
@@ -216,7 +223,7 @@ public class MPU9250 extends NineDOF
 
         for(int s = 0; s < packetCount; s++)
         {
-            tempGyroBias = read16BitRegisters(mpu9250,Registers.FIFO_R_W.getAddress(),6); //12 bytes
+            tempGyroBias = ro.read16BitRegisters(mpu9250,Registers.FIFO_R_W.getAddress(),6); //12 bytes
             accelBiasl[0] += tempAccelBias[0]; //Signed 32 bit quantities
             accelBiasl[1] += tempAccelBias[1];
             accelBiasl[2] += tempAccelBias[2];
@@ -265,7 +272,7 @@ public class MPU9250 extends NineDOF
         // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
         // the accelerometer biases calculated above must be divided by 8.
         
-        short[] accelBiasReg = read16BitRegisters(mpu9250, Registers.XA_OFFSET_H.getAddress(), 3);
+        short[] accelBiasReg = ro.read16BitRegisters(mpu9250, Registers.XA_OFFSET_H.getAddress(), 3);
 
         int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
         byte[] mask_bit = new byte[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
@@ -368,7 +375,7 @@ public class MPU9250 extends NineDOF
         //mpu9250.write(Registers.INT_PIN_CFG.getValue(), (byte)0x12);  // INT is 50 microsecond pulse and any read to clear
         mpu9250.write(Registers.INT_PIN_CFG.getAddress(), (byte)0x22);  // INT is 50 microsecond pulse and any read to clear - as per MPUBASICAHRS_T3
         mpu9250.write(Registers.INT_ENABLE.getAddress(), (byte)0x01);  // Enable data ready (bit 0) interrupt
-        outputConfigRegisters();
+        ro.outputConfigRegisters();
         Thread.sleep(100);
     	System.out.println("End initMPU9250");
     }
@@ -452,7 +459,7 @@ public class MPU9250 extends NineDOF
         short registers[];
         //mpu9250.read(Registers.ACCEL_XOUT_H.getAddress(), 6);  // Read again to trigger
  
-        registers = read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
+        registers = ro.read16BitRegisters(mpu9250,Registers.ACCEL_XOUT_H.getAddress(),3);
         //System.out.println("Accelerometer " + xs + ", " + ys + ", " + zs);
 
         x = (float) ((float)registers[0]*accScale.getRes()); // transform from raw data to g
@@ -472,7 +479,7 @@ public class MPU9250 extends NineDOF
         float x,y,z;
         short registers[];
         //mpu9250.read(Registers.GYRO_XOUT_H.getAddress(), 6);  // Read again to trigger
-        registers = read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
+        registers = ro.read16BitRegisters(mpu9250,Registers.GYRO_XOUT_H.getAddress(),3);
         //System.out.println("Gyroscope " + x + ", " + y + ", " + z);
 
         x = (float) ((float)registers[0]*gyrScale.getRes()); // transform from raw data to degrees/s
@@ -518,69 +525,5 @@ public class MPU9250 extends NineDOF
         therm.add((float)(short)((rawData[0] << 8) | rawData[1]));  // Turn the MSB and LSB into a 16-bit value
     }
     
-    /**
-     * Reads the specified number of 16 bit Registers from a given device and address
-     * @param address 	- the start address for the read
-     * @param regCount 	- number of 16 bit registers to be read
-     * @return 			- an array of shorts (16 bit signed values) holding the registers
-     * Each registers is constructed from reading and combining 2 bytes, the first byte forms the more significant part of the register 
-     */
-    public short[] read16BitRegisters(I2CImplementation device, int address, int regCount)
-    {
-        byte rawData[] = null;
-		try {
-			rawData = device.read(address, regCount*2);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-        short[] registers = new short[regCount];
-        for (int i=0;i<regCount;i++)		
-        {
-        	registers[i] = (short) (((short)rawData[i*2] << 8) | rawData[(i*2)+1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-        }
-    	return registers;
-    }
-    public String byteToString(byte b)
-    {
-    	String s = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
-    	return s;  	
-    }
-    public void printByteRegister(Registers r)
-    {
-    	byte rv = 0;
-    	try {
-			rv = mpu9250.read(r.getAddress());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
-    	System.out.format("%20s : %8s 0X%X%n",r.name(),byteToString(rv),rv);
-    }
-    
-    public void outputConfigRegisters()
-    {
-    	printByteRegister(Registers.CONFIG);
-    	printByteRegister(Registers.GYRO_CONFIG);
-    	printByteRegister(Registers.ACCEL_CONFIG);
-    	printByteRegister(Registers.ACCEL_CONFIG2);
-    	printByteRegister(Registers.LP_ACCEL_ODR);
-    	printByteRegister(Registers.WOM_THR);
-    	printByteRegister(Registers.MOT_DUR);
-    	printByteRegister(Registers.ZMOT_THR);
-    	printByteRegister(Registers.FIFO_EN);
-    	printByteRegister(Registers.I2C_MST_CTRL);
-    	printByteRegister(Registers.I2C_MST_STATUS);
-    	printByteRegister(Registers.INT_PIN_CFG);
-    	printByteRegister(Registers.INT_ENABLE);
-    	printByteRegister(Registers.INT_STATUS);
-    	printByteRegister(Registers.I2C_MST_DELAY_CTRL);
-    	printByteRegister(Registers.SIGNAL_PATH_RESET);
-    	printByteRegister(Registers.MOT_DETECT_CTRL);
-    	printByteRegister(Registers.USER_CTRL);
-    	printByteRegister(Registers.PWR_MGMT_1);
-    	printByteRegister(Registers.PWR_MGMT_2);
-    	printByteRegister(Registers.WHO_AM_I_MPU9250);
-    	printByteRegister(Registers.SMPLRT_DIV);
-    }
+
 }
