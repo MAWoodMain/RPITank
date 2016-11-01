@@ -114,9 +114,8 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.GYRO_CONFIG, GyrScale.GFS_250DPS.getValue());
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG, AccScale.AFS_2G.getValue());
         Thread.sleep(25); // Delay a while to let the device stabilise
-        //outputConfigRegisters();
-        short[] selfTest = new short[6];
 
+        short[] selfTest = new short[6]; //Longer than byte to allow for removal of sign bit as this is unsigned
         selfTest[0] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_X_ACCEL) & 0xFF);
         Thread.sleep(2);
         selfTest[1] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Y_ACCEL) & 0xFF);
@@ -130,15 +129,16 @@ public class MPU9250 extends NineDOF
         Thread.sleep(2);
         selfTest[5] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Z_GYRO) & 0xFF);
         Thread.sleep(2);
-        System.out.println(Arrays.toString(selfTest));
+        System.out.println("Self test bytes: "+Arrays.toString(selfTest));
+        
         float[] factoryTrim = new float[6];
-
         factoryTrim[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[0] - 1f);
         factoryTrim[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[1] - 1f);
         factoryTrim[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[2] - 1f);
         factoryTrim[3] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[3] - 1f);
         factoryTrim[4] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[4] - 1f);
         factoryTrim[5] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[5] - 1f);
+        System.out.println("factoryTrim : "+Arrays.toString(factoryTrim)); 
 
         float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0];
         float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1];
@@ -185,7 +185,7 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG,(byte) 0x00); // Set accelerometer full-scale to 2 g, maximum sensitivity
 
         short gyrosensitivity = 131;     // = 131 LSB/degrees/sec
-        short accelSensitivity = 16384;  // = 16384 LSB/g
+        short accelSensitivity = 16384;  // = 16384 LSB/g - OK in short max 32,767
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
         roMPU.writeByteRegister(Registers.USER_CTRL,(byte) 0x40);   // Enable FIFO
@@ -200,18 +200,17 @@ public class MPU9250 extends NineDOF
 
         int[] accelBiasl = new int[]{0,0,0}; 
         int[] gyroBias = new int[]{0,0,0};
-        short[] tempAccelBias = new short[]{0,0,0}; 
-        short[] tempGyroBias = new short[]{0,0,0};
+        short[] tempBias;
 
         for(int s = 0; s < packetCount; s++)
         {
-            tempGyroBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
-            accelBiasl[0] += tempAccelBias[0]; //Signed 32 bit quantities
-            accelBiasl[1] += tempAccelBias[1];
-            accelBiasl[2] += tempAccelBias[2];
-            gyroBias[0] += tempGyroBias[0];
-            gyroBias[1] += tempGyroBias[1];
-            gyroBias[2] += tempGyroBias[2];
+            tempBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
+            accelBiasl[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
+            accelBiasl[1] += tempBias[1];
+            accelBiasl[2] += tempBias[2];
+            gyroBias[0] += tempBias[4];
+            gyroBias[1] += tempBias[5];
+            gyroBias[2] += tempBias[6];
         }
 
         accelBiasl[0] /= sampleCount; // Normalise sums to get average count biases

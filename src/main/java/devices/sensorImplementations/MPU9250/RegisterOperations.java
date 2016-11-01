@@ -114,7 +114,7 @@ public class RegisterOperations {
        } catch (InterruptedException e) {
 		e.printStackTrace();
        }
-	   System.out.print("After - ");
+	   System.out.print("After  - ");
 	   printByteRegister(r);
    }
 }
