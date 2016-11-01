@@ -545,36 +545,41 @@ public class MPU9250 extends NineDOF
     	String s = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
     	return s;  	
     }
-    public void outputConfigRegisters()
+    public void printRegister(Registers r)
     {
+    	byte rv = 0;
     	try {
-    		//System.out.println(	 byteToString((byte)0x80)+byteToString((byte)0x40)+byteToString((byte)0x20)+byteToString((byte)0x10)
-    		//					+byteToString((byte)0x08)+byteToString((byte)0x04)+byteToString((byte)0x02)+byteToString((byte)0x01));
-			System.out.println("CONFIG            :"+byteToString(mpu9250.read(Registers.CONFIG.getAddress())));
-			System.out.println("GYRO_CONFIG       :"+byteToString(mpu9250.read(Registers.GYRO_CONFIG.getAddress())));
-			System.out.println("ACCEL_CONFIG      :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG.getAddress())));
-			System.out.println("ACCEL_CONFIG2     :"+byteToString(mpu9250.read(Registers.ACCEL_CONFIG2.getAddress())));
-			System.out.println("LP_ACCEL_ODR      :"+byteToString(mpu9250.read(Registers.LP_ACCEL_ODR.getAddress())));
-			System.out.println("WOM_THR           :"+byteToString(mpu9250.read(Registers.WOM_THR.getAddress())));
-			System.out.println("MOT_DUR           :"+byteToString(mpu9250.read(Registers.MOT_DUR.getAddress())));
-			System.out.println("ZMOT_THR          :"+byteToString(mpu9250.read(Registers.ZMOT_THR.getAddress())));
-			System.out.println("FIFO_EN           :"+byteToString(mpu9250.read(Registers.FIFO_EN.getAddress())));
-			System.out.println("I2C_MST_CTRL      :"+byteToString(mpu9250.read(Registers.I2C_MST_CTRL.getAddress())));
-			System.out.println("I2C_MST_STATUS    :"+byteToString(mpu9250.read(Registers.I2C_MST_STATUS.getAddress())));
-			System.out.println("NT_PIN_CFG        :"+byteToString(mpu9250.read(Registers.INT_PIN_CFG.getAddress())));
-			System.out.println("INT_ENABLE        :"+byteToString(mpu9250.read(Registers.INT_ENABLE.getAddress())));
-			System.out.println("INT_STATUS        :"+byteToString(mpu9250.read(Registers.INT_STATUS.getAddress())));
-			System.out.println("I2C_MST_DELAY_CTRL:"+byteToString(mpu9250.read(Registers.I2C_MST_DELAY_CTRL.getAddress())));
-			System.out.println("SIGNAL_PATH_RESET :"+byteToString(mpu9250.read(Registers.SIGNAL_PATH_RESET.getAddress())));
-			System.out.println("MOT_DETECT_CTRL   :"+byteToString(mpu9250.read(Registers.MOT_DETECT_CTRL.getAddress())));
-			System.out.println("USER_CTRL         :"+byteToString(mpu9250.read(Registers.USER_CTRL.getAddress())));
-			System.out.println("PWR_MGMT_1        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_1.getAddress())));
-			System.out.println("PWR_MGMT_2        :"+byteToString(mpu9250.read(Registers.PWR_MGMT_2.getAddress())));
-			System.out.println("WHO_AM_I_MPU9250  :"+byteToString(mpu9250.read(Registers.WHO_AM_I_MPU9250.getAddress())));
-			System.out.println("SMPLRT_DIV        :"+byteToString(mpu9250.read(Registers.SMPLRT_DIV.getAddress())));
+			rv = mpu9250.read(r.getAddress());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}	
+    	System.out.format("%20s : %8s 0X%X%n",r.name(),byteToString(rv),rv);
+    }
+    
+    public void outputConfigRegisters()
+    {
+    	printRegister(Registers.CONFIG);
+    	printRegister(Registers.GYRO_CONFIG);
+    	printRegister(Registers.ACCEL_CONFIG);
+    	printRegister(Registers.ACCEL_CONFIG2);
+    	printRegister(Registers.LP_ACCEL_ODR);
+    	printRegister(Registers.WOM_THR);
+    	printRegister(Registers.MOT_DUR);
+    	printRegister(Registers.ZMOT_THR);
+    	printRegister(Registers.FIFO_EN);
+    	printRegister(Registers.I2C_MST_CTRL);
+    	printRegister(Registers.I2C_MST_STATUS);
+    	printRegister(Registers.INT_PIN_CFG);
+    	printRegister(Registers.INT_ENABLE);
+    	printRegister(Registers.INT_STATUS);
+    	printRegister(Registers.I2C_MST_DELAY_CTRL);
+    	printRegister(Registers.SIGNAL_PATH_RESET);
+    	printRegister(Registers.MOT_DETECT_CTRL);
+    	printRegister(Registers.USER_CTRL);
+    	printRegister(Registers.PWR_MGMT_1);
+    	printRegister(Registers.PWR_MGMT_2);
+    	printRegister(Registers.WHO_AM_I_MPU9250);
+    	printRegister(Registers.SMPLRT_DIV);
     }
 }
