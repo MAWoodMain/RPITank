@@ -12,11 +12,11 @@ import devices.I2C.I2CImplementation;
  *
  */
 public class RegisterOperations {
-	private I2CImplementation mpu9250;
+	private I2CImplementation busDevice;
 	
 	public RegisterOperations(I2CImplementation mpu9250)
 	{
-		this.mpu9250 = mpu9250;
+		this.busDevice = mpu9250;
 	}
 	
     public String byteToString(byte b)
@@ -28,7 +28,7 @@ public class RegisterOperations {
     {
     	byte rv = 0;
     	try {
-			rv = mpu9250.read(r.getAddress());
+			rv = busDevice.read(r.getAddress());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -68,11 +68,11 @@ public class RegisterOperations {
     * @return 			- an array of shorts (16 bit signed values) holding the registers
     * Each registers is constructed from reading and combining 2 bytes, the first byte forms the more significant part of the register 
     */
-   short[] read16BitRegisters(I2CImplementation device, int address, int regCount)
+   short[] read16BitRegisters(Registers r, int regCount)
    {
        byte rawData[] = null;
 		try {
-			rawData = device.read(address, regCount*2);
+			rawData = busDevice.read(r.getAddress(), regCount*2);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -85,10 +85,20 @@ public class RegisterOperations {
    	return registers;
    }
 
+   byte readByteRegister(Registers r)
+   {
+	   try {
+		return busDevice.read(r.getAddress());
+	   } catch (IOException e) {
+		   e.printStackTrace();
+		   return (byte)0xFF;
+	   }
+	
+   }
    void writeByteRegister(Registers r, byte rv)
    {
        try {
-		mpu9250.write(r.getAddress(),rv);
+		busDevice.write(r.getAddress(),rv);
 	} catch (IOException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
