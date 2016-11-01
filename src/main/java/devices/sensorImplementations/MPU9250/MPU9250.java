@@ -201,10 +201,12 @@ public class MPU9250 extends NineDOF
         int[] accelBiasl = new int[]{0,0,0}; 
         int[] gyroBias = new int[]{0,0,0};
         short[] tempBias;
-
-        for(int s = 0; s < packetCount; s++)
+        System.out.println("packetCount: "+packetCount);
+        for(int s = 0; s < sampleCount; s++)
         {
             tempBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
+            System.out.println("bias sample bytes: "+Arrays.toString(tempBias));
+            
             accelBiasl[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
             accelBiasl[1] += tempBias[1];
             accelBiasl[2] += tempBias[2];
@@ -219,6 +221,8 @@ public class MPU9250 extends NineDOF
         gyroBias[0] /= sampleCount;
         gyroBias[1] /= sampleCount;
         gyroBias[2] /= sampleCount;
+        System.out.println("Normalised accumulated AccBias : "+Arrays.toString(accelBiasl));
+        System.out.println("Normalised accumulated GyroBias: "+Arrays.toString(gyroBias));
 
         if(accelBiasl[2] > 0L) {accelBiasl[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
         else {accelBiasl[2] += accelSensitivity;}
@@ -232,6 +236,7 @@ public class MPU9250 extends NineDOF
         buffer[3] = (byte)((-gyroBias[1]/4)       & 0xFF);
         buffer[4] = (byte)((-gyroBias[2]/4  >> 8) & 0xFF);
         buffer[5] = (byte)((-gyroBias[2]/4)       & 0xFF);
+        System.out.println("Bias bytes: "+Arrays.toString(buffer));
 
 
         // Push gyro biases to hardware registers
