@@ -8,8 +8,14 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * RPITank
- * Created by MAWood on 17/07/2016.
+ * MPU 9250 motion sensor
+ * Created by MAWood on 17/07/2016 with contributions from G.J.Wood
+ * Based on MPU9250_MS5637_t3 Basic Example Code by: Kris Winer date: April 1, 2014
+ * https://github.com/kriswiner/MPU-9250/blob/master/MPU9250_MS5637_AHRS_t3.ino
+ * 
+ * Basic MPU-9250 gyroscope, accelerometer and magnetometer functionality including self test, initialisation, and calibration of the sensor,
+ * getting properly scaled accelerometer, gyroscope, and magnetometer data out. This class is independent of the bus implementation, register 
+ * addressing etc as this is handled by RegisterOperations 
  */
 public class MPU9250 extends NineDOF
 {
@@ -52,8 +58,8 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG,(byte)AccScale.AFS_2G.getValue());// Set full scale range for the accelerometer to 2 g (was FS<<3 )
         final int TEST_LENGTH = 200;
 
-        int[] aAvg = new int[3]; //32 bit integer to accumulate
-        int[] gAvg = new int[3];
+        int[] aAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] gAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
         short[] registers; 
         for (int i = 0; i<3; i++)
         {
@@ -66,12 +72,18 @@ public class MPU9250 extends NineDOF
             aAvg[0] += registers[0];
             aAvg[1] += registers[1];
             aAvg[2] += registers[2];
+            System.out.print("aAvg acc: "+Arrays.toString(aAvg));
+        	System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
+        			registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
             Thread.sleep(2);
 
             registers = roMPU.read16BitRegisters(Registers.GYRO_XOUT_H,3);
             gAvg[0] += registers[0];
             gAvg[1] += registers[1];
             gAvg[2] += registers[2];
+            System.out.print("gAvg acc: "+Arrays.toString(gAvg));
+        	System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
+        			registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
             Thread.sleep(2);
         }
 
@@ -80,13 +92,16 @@ public class MPU9250 extends NineDOF
             aAvg[i] /= TEST_LENGTH;
             gAvg[i] /= TEST_LENGTH;
         }
+        System.out.print("aAvg average: "+Arrays.toString(aAvg));
+        System.out.print("gAvg average: "+Arrays.toString(gAvg));
+        
         // Configure the accelerometer for self-test
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG, (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
         roMPU.writeByteRegister(Registers.GYRO_CONFIG, (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
         //outputConfigRegisters();
-        int[] aSTAvg = new int[3]; // cumulative values hence int to avoid overflow
-        int[] gSTAvg = new int[3];
+        int[] aSTAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] gSTAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
         
         // get average self-test values of gyro and accelerometer
         for(int s=0; s<TEST_LENGTH; s++) 
@@ -255,7 +270,7 @@ public class MPU9250 extends NineDOF
   		gyrBias[0] = (float) gyroBias[0]/(float) gyrosensitivity;  
   		gyrBias[1] = (float) gyroBias[1]/(float) gyrosensitivity;
   		gyrBias[2] = (float) gyroBias[2]/(float) gyrosensitivity;
-        System.out.print("gyrBias (float): "+Arrays.toString(gyrBias));
+        System.out.println("gyrBias (float): "+Arrays.toString(gyrBias));
 
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
         // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -490,16 +505,19 @@ public class MPU9250 extends NineDOF
     @Override
     public void updateMagnetometerData() throws IOException
     {
-        byte newMagData = (byte)(roAK.readByteRegister(Registers.AK8963_ST1) & 0x01);
-        if (newMagData == 0) return;
-        byte[] buffer = roAK.readByteRegisters(Registers.AK8963_ST1, 7);
+        byte dataReady = (byte)(roAK.readByteRegister(Registers.AK8963_ST1) & 0x01); //DRDY - Data ready bit0 1 = data is ready
+        if (dataReady == 0) return; //no data ready
+        
+        // data is ready, read it NB bug fix here read was starting from ST1 not XOUT_L
+        byte[] buffer = roAK.readByteRegisters(Registers.AK8963_XOUT_L, 7); //6 data bytes x,y,z 16 bits stored as little Endian (L/H)
 
-        byte c = buffer[6];
-        if((c & 0x08) == 0)
+        byte status2 = buffer[6]; // Status2 register must be read as part of data read to show device data has been read
+        if((status2 & 0x08) == 0) //bit3 HOFL: Magnetic sensor overflow is normal (no Overflow), data is valid
         { // Check if magnetic sensor overflow set, if not then report data
             lastRawMagX = (short) ((buffer[1] << 8) | buffer[0]); // Turn the MSB and LSB into a signed 16-bit value
             lastRawMagY = (short) ((buffer[3] << 8) | buffer[2]); // Data stored as little Endian
             lastRawMagZ = (short) ((buffer[5] << 8) | buffer[4]);
+            
             float x=lastRawMagX,y=lastRawMagY,z=lastRawMagZ;
 
             x *= magScale.getRes()* magScaling[0];
@@ -512,7 +530,7 @@ public class MPU9250 extends NineDOF
 
             mag.add(new TimestampedData3D(x,y,z));
         }
-        roAK.readByteRegister(Registers.AK8963_ST2);// Data overflow bit 3 and data read error status bit 2
+        //roAK.readByteRegister(Registers.AK8963_ST2);// Data overflow bit 3 and data read error status bit 2
     }
 
     @Override
