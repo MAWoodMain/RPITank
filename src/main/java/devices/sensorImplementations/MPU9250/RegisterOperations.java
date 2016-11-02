@@ -41,13 +41,7 @@ public class RegisterOperations {
      */
     public void printByteRegister(Registers r)
     {
-    	byte rv = 0;
-    	try {
-			rv = busDevice.read(r.getAddress());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
+    	byte rv = readByteRegister(r);
     	System.out.format("%20s : %8s 0x%X%n",r.name(),byteToString(rv),rv);
     }
    
@@ -107,8 +101,7 @@ public class RegisterOperations {
     */
    void writeByteRegister(Registers r, byte rv)
    {
-	   System.out.print("Before - ");
-	   printByteRegister(r);
+	   byte oldRegVal = readByteRegister(r);
        try {
 		busDevice.write(r.getAddress(),rv);
        } catch (IOException e) {
@@ -119,8 +112,9 @@ public class RegisterOperations {
        } catch (InterruptedException e) {
 		e.printStackTrace();
        }
-	   System.out.print("After  - ");
-	   printByteRegister(r);
+	   byte newRegVal = readByteRegister(r);
+	   System.out.format("%20s : %8s 0x%X -> %8s 0x%X%n",r.name(),byteToString(oldRegVal),oldRegVal,byteToString(newRegVal),newRegVal);
+
    }
    
   /**

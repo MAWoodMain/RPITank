@@ -175,7 +175,7 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.PWR_MGMT_1,(byte) 0x00);   // Turn on internal clock source
         roMPU.writeByteRegister(Registers.I2C_MST_CTRL,(byte) 0x00); // Disable I2C master
         roMPU.writeByteRegister(Registers.USER_CTRL,(byte) 0x00);    // Disable FIFO and I2C master modes
-        roMPU.writeByteRegister(Registers.USER_CTRL,(byte) 0x0C);    // Reset FIFO and DMP
+        roMPU.writeByteRegister(Registers.USER_CTRL,(byte) 0x0C);    // Reset FIFO and DMP NB the 0x08 bit is the DMP shown as reserved in docs
         Thread.sleep(15);
 
         // Configure MPU6050 gyro and accelerometer for bias calculation
@@ -205,7 +205,8 @@ public class MPU9250 extends NineDOF
         for(int s = 0; s < sampleCount; s++)
         {
             tempBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
-            System.out.println("bias sample bytes: "+Arrays.toString(tempBias));
+            System.out.print("bias sample bytes: "+Arrays.toString(tempBias));
+        	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",tempBias[0],tempBias[1],tempBias[2],tempBias[3],tempBias[4],tempBias[5]);
             
             accelBiasl[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
             accelBiasl[1] += tempBias[1];
@@ -221,8 +222,10 @@ public class MPU9250 extends NineDOF
         gyroBias[0] /= sampleCount;
         gyroBias[1] /= sampleCount;
         gyroBias[2] /= sampleCount;
-        System.out.println("Normalised accumulated AccBias : "+Arrays.toString(accelBiasl));
-        System.out.println("Normalised accumulated GyroBias: "+Arrays.toString(gyroBias));
+        System.out.print("Normalised accumulated AccBias : "+Arrays.toString(accelBiasl));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",accelBiasl[0],accelBiasl[1],accelBiasl[2]);
+        System.out.print("Normalised accumulated GyroBias: "+Arrays.toString(gyroBias));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",gyroBias[0],gyroBias[1],gyroBias[2]);
 
         if(accelBiasl[2] > 0L) {accelBiasl[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
         else {accelBiasl[2] += accelSensitivity;}
@@ -230,14 +233,15 @@ public class MPU9250 extends NineDOF
 
         byte[] buffer = new byte[6];
         // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
-        buffer[0] = (byte)((-gyroBias[0]/4  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
+        buffer[0] = (byte)(((-gyroBias[0]/4)  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
         buffer[1] = (byte)((-gyroBias[0]/4)       & 0xFF); // Biases are additive, so change sign on calculated average gyro biases
-        buffer[2] = (byte)((-gyroBias[1]/4  >> 8) & 0xFF);
+        buffer[2] = (byte)(((-gyroBias[1]/4)  >> 8) & 0xFF);
         buffer[3] = (byte)((-gyroBias[1]/4)       & 0xFF);
-        buffer[4] = (byte)((-gyroBias[2]/4  >> 8) & 0xFF);
+        buffer[4] = (byte)(((-gyroBias[2]/4)  >> 8) & 0xFF);
         buffer[5] = (byte)((-gyroBias[2]/4)       & 0xFF);
-        System.out.println("Bias bytes: "+Arrays.toString(buffer));
-
+        System.out.print("Bias bytes: "+Arrays.toString(buffer));
+    	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5]);
+        
 
         // Push gyro biases to hardware registers
         roMPU.writeByteRegister(Registers.XG_OFFSET_H, buffer[0]);
@@ -251,6 +255,7 @@ public class MPU9250 extends NineDOF
   		gyrBias[0] = (float) gyroBias[0]/(float) gyrosensitivity;  
   		gyrBias[1] = (float) gyroBias[1]/(float) gyrosensitivity;
   		gyrBias[2] = (float) gyroBias[2]/(float) gyrosensitivity;
+        System.out.print("gyrBias (float): "+Arrays.toString(gyrBias));
 
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
         // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
@@ -259,6 +264,8 @@ public class MPU9250 extends NineDOF
         // the accelerometer biases calculated above must be divided by 8.
         
         short[] accelBiasReg = roMPU.read16BitRegisters( Registers.XA_OFFSET_H, 3);
+        System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
         int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
         byte[] mask_bit = new byte[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
@@ -271,29 +278,34 @@ public class MPU9250 extends NineDOF
         accelBiasReg[0] -= (accelBiasl[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
         accelBiasReg[1] -= (accelBiasl[1]/8);
         accelBiasReg[2] -= (accelBiasl[2]/8);
+        System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
         buffer = new byte[6];
 
-        buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF);
-        buffer[1] = (byte)((accelBiasReg[0])      & 0xFF);
+        buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF); //Shift down and mask top 8 bits
+        buffer[1] = (byte)((accelBiasReg[0])      & 0xFE); //copy bits 7-1 clear bit 0
         buffer[1] = (byte)(buffer[1] | mask_bit[0]); // preserve temperature compensation bit when writing back to accelerometer bias registers
-        buffer[2] = (byte)((accelBiasReg[1] >> 8) & 0xFF);
-        buffer[3] = (byte)((accelBiasReg[1])      & 0xFF);
+        buffer[2] = (byte)((accelBiasReg[1] >> 8) & 0xFF); //Shift down and mask top 8 bits
+        buffer[3] = (byte)((accelBiasReg[1])      & 0xFE); //copy bits 7-1 clear bit 0
         buffer[3] = (byte)(buffer[3] | mask_bit[1]); // preserve temperature compensation bit when writing back to accelerometer bias registers
-        buffer[4] = (byte)((accelBiasReg[2] >> 8) & 0xFF);
-        buffer[5] = (byte)((accelBiasReg[2])      & 0xFF);
+        buffer[4] = (byte)((accelBiasReg[2] >> 8) & 0xFF); //Shift down and mask top 8 bits
+        buffer[5] = (byte)((accelBiasReg[2])      & 0xFE); //copy bits 7-1 clear bit 0
         buffer[5] = (byte)(buffer[5] | mask_bit[2]); // preserve temperature compensation bit when writing back to accelerometer bias registers
+        System.out.print("accelBiasReg bytes: "+Arrays.toString(buffer));
+    	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5]);
 
         // Apparently this is not working for the acceleration biases in the MPU-9250
-        // Are we handling the temperature correction bit properly?
-        // Push accelerometer biases to hardware registers
-        /*ro.writeByteRegister(XA_OFFSET_H.getX(), buffer[0]);
-        ro.writeByteRegister(XA_OFFSET_L.getX(), buffer[1]);
-        ro.writeByteRegister(YA_OFFSET_H.getX(), buffer[2]);
-        ro.writeByteRegister(YA_OFFSET_L.getX(), buffer[3]);
-        ro.writeByteRegister(ZA_OFFSET_H.getX(), buffer[4]);
-        ro.writeByteRegister(ZA_OFFSET_L.getX(), buffer[5]);
-        */
+        // Are we handling the temperature correction bit properly? - no mask with 0xFE not 0xFF then Or with mask_bit
+    	
+        // Push accelerometer biases to hardware registers  	
+        roMPU.writeByteRegister(Registers.XA_OFFSET_H, buffer[0]);
+        roMPU.writeByteRegister(Registers.XA_OFFSET_L, buffer[1]);
+        roMPU.writeByteRegister(Registers.YA_OFFSET_H, buffer[2]);
+        roMPU.writeByteRegister(Registers.YA_OFFSET_L, buffer[3]);
+        roMPU.writeByteRegister(Registers.ZA_OFFSET_H, buffer[4]);
+        roMPU.writeByteRegister(Registers.ZA_OFFSET_L, buffer[5]);
+        
 
 
         accBias[0] = (float)accelBiasl[0]/(float)accelSensitivity;
