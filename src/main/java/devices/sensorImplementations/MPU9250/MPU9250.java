@@ -54,119 +54,141 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.SMPLRT_DIV,(byte)0x00); // Set gyro sample rate to 1 kHz
         roMPU.writeByteRegister(Registers.CONFIG,(byte)0x02); // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
         roMPU.writeByteRegister(Registers.GYRO_CONFIG,GyrScale.GFS_250DPS.getValue()); // Set full scale range for the gyro to 250 dps (was FS<<3) 
-        roMPU.writeByteRegister(Registers.ACCEL_CONFIG2,(byte)0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG,(byte)AccScale.AFS_2G.getValue());// Set full scale range for the accelerometer to 2 g (was FS<<3 )
+        roMPU.writeByteRegister(Registers.ACCEL_CONFIG2,(byte)0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         final int TEST_LENGTH = 200;
 
-        int[] aAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
-        int[] gAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] aSum = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] gSum = new int[3]; //32 bit integer to accumulate and avoid overflow
         short[] registers; 
         for (int i = 0; i<3; i++)
         {
-        	aAvg[i] = 0;
-        	gAvg[i] = 0;
+        	aSum[i] = 0;
+        	gSum[i] = 0;
         }
         for(int s=0; s<TEST_LENGTH; s++)
         {
+            //System.out.print("aAvg acc: "+Arrays.toString(aAvg));
             registers = roMPU.read16BitRegisters(Registers.ACCEL_XOUT_H,3);
-            aAvg[0] += registers[0];
-            aAvg[1] += registers[1];
-            aAvg[2] += registers[2];
-            System.out.print("aAvg acc: "+Arrays.toString(aAvg));
-        	System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
-        			registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
-            Thread.sleep(2);
+            aSum[0] += registers[0];
+            aSum[1] += registers[1];
+            aSum[2] += registers[2];
+        	//System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
+        	//		registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
 
+            //System.out.print("gAvg acc: "+Arrays.toString(gAvg));
             registers = roMPU.read16BitRegisters(Registers.GYRO_XOUT_H,3);
-            gAvg[0] += registers[0];
-            gAvg[1] += registers[1];
-            gAvg[2] += registers[2];
-            System.out.print("gAvg acc: "+Arrays.toString(gAvg));
-        	System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
-        			registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
-            Thread.sleep(2);
+            gSum[0] += registers[0];
+            gSum[1] += registers[1];
+            gSum[2] += registers[2];
+        	//System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
+        	//		registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
         }
-
+        short[] aAvg = new short[3];
+        short[] gAvg = new short[3];
         for(int i = 0; i<3; i++)
         {
-            aAvg[i] /= TEST_LENGTH;
-            gAvg[i] /= TEST_LENGTH;
+            aSum[i] /= TEST_LENGTH;
+            aAvg[i] = (short) (aSum[i] & 0xFFFF); //mask off top bits
+            gSum[i] /= TEST_LENGTH;
+            gAvg[i] = (short) (aSum[i] & 0xFFFF); //mask off top bits
         }
+
         System.out.print("aAvg average: "+Arrays.toString(aAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n", aAvg[0], aAvg[1], aAvg[2]);
         System.out.print("gAvg average: "+Arrays.toString(gAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n", gAvg[0], gAvg[1], gAvg[2]);
         
         // Configure the accelerometer for self-test
-        roMPU.writeByteRegister(Registers.ACCEL_CONFIG, (byte)0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
-        roMPU.writeByteRegister(Registers.GYRO_CONFIG, (byte)0xE0);// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
+        roMPU.writeByteRegister(Registers.ACCEL_CONFIG, (byte)(0xE0 | AccScale.AFS_2G.getValue())); // Enable self test on all three axes and set accelerometer range to +/- 2 g
+        roMPU.writeByteRegister(Registers.GYRO_CONFIG, (byte)(0xE0 | GyrScale.GFS_250DPS.getValue()));// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
         //outputConfigRegisters();
-        int[] aSTAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
-        int[] gSTAvg = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] aSelfTestSum = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] gSelfTestSum = new int[3]; //32 bit integer to accumulate and avoid overflow
         
         // get average self-test values of gyro and accelerometer
         for(int s=0; s<TEST_LENGTH; s++) 
         {
             registers = roMPU.read16BitRegisters(Registers.ACCEL_XOUT_H,3);
-            aSTAvg[0] += registers[0];
-            aSTAvg[1] += registers[1];
-            aSTAvg[2] += registers[2];
-            Thread.sleep(2);
+            aSelfTestSum[0] += registers[0];
+            aSelfTestSum[1] += registers[1];
+            aSelfTestSum[2] += registers[2];
 
             registers = roMPU.read16BitRegisters(Registers.GYRO_XOUT_H,3);
-            gSTAvg[0] += registers[0];
-            gSTAvg[1] += registers[1];
-            gSTAvg[2] += registers[2];
-            Thread.sleep(2);
+            gSelfTestSum[0] += registers[0];
+            gSelfTestSum[1] += registers[1];
+            gSelfTestSum[2] += registers[2];
         }
+        
+        short[] aSTAvg = new short[3];
+        short[] gSTAvg = new short[3];
 
         for(int i = 0; i<3; i++)
         {
-            aSTAvg[i] /= TEST_LENGTH;
-            gSTAvg[i] /= TEST_LENGTH;
+            aSelfTestSum[i] /= TEST_LENGTH;
+            aSTAvg[i] = (short) (aSelfTestSum[i] & 0xFFFF); //mask off top bits
+            gSelfTestSum[i] /= TEST_LENGTH;
+            gSTAvg[i] = (short) (gSelfTestSum[i] & 0xFFFF); //mask off top bits
         }
+        System.out.print("aSTAvg average: "+Arrays.toString(aSTAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n", aSTAvg[0], aSTAvg[1], aSTAvg[2]);
+        System.out.print("gSTAvg average: "+Arrays.toString(gSTAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n", aSTAvg[0], aSTAvg[1], aSTAvg[2]);
 
-        Thread.sleep(2);
-        roMPU.writeByteRegister(Registers.GYRO_CONFIG, GyrScale.GFS_250DPS.getValue());
-        roMPU.writeByteRegister(Registers.ACCEL_CONFIG, AccScale.AFS_2G.getValue());
-        Thread.sleep(25); // Delay a while to let the device stabilise
 
-        short[] selfTest = new short[6]; //Longer than byte to allow for removal of sign bit as this is unsigned
-        selfTest[0] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_X_ACCEL) & 0xFF);
-        Thread.sleep(2);
-        selfTest[1] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Y_ACCEL) & 0xFF);
-        Thread.sleep(2);
-        selfTest[2] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Z_ACCEL) & 0xFF);
-        Thread.sleep(2);
+        // Calculate Accelerometer accuracy
+        short[] selfTestAccel = new short[3]; //Longer than byte to allow for removal of sign bit as this is unsigned
+        selfTestAccel[0] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_X_ACCEL) & 0xFF);
+        selfTestAccel[1] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Y_ACCEL) & 0xFF);
+        selfTestAccel[2] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Z_ACCEL) & 0xFF);
+        System.out.print("Self test Accel bytes: "+Arrays.toString(selfTestAccel));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n", selfTestAccel[0], selfTestAccel[1], selfTestAccel[2]);
         
-        selfTest[3] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_X_GYRO) & 0xFF);
-        Thread.sleep(2);
-        selfTest[4] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Y_GYRO) & 0xFF);
-        Thread.sleep(2);
-        selfTest[5] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Z_GYRO) & 0xFF);
-        Thread.sleep(2);
-        System.out.println("Self test bytes: "+Arrays.toString(selfTest));
-        
-        float[] factoryTrim = new float[6];
-        factoryTrim[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[0] - 1f);
-        factoryTrim[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[1] - 1f);
-        factoryTrim[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[2] - 1f);
-        factoryTrim[3] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[3] - 1f);
-        factoryTrim[4] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[4] - 1f);
-        factoryTrim[5] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTest[5] - 1f);
-        System.out.println("factoryTrim : "+Arrays.toString(factoryTrim)); 
+        float[] factoryTrimAccel = new float[3];
+        factoryTrimAccel[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestAccel[0] - 1f);
+        factoryTrimAccel[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestAccel[1] - 1f);
+        factoryTrimAccel[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestAccel[2] - 1f);
+        System.out.println("factoryTrimAcc (float): "+Arrays.toString(factoryTrimAccel)); 
 
-        float aXAccuracy = 100*((float)(aSTAvg[0] - aAvg[0]))/factoryTrim[0];
-        float aYAccuracy = 100*((float)(aSTAvg[1] - aAvg[1]))/factoryTrim[1];
-        float aZAccuracy = 100*((float)(aSTAvg[2] - aAvg[2]))/factoryTrim[2];
+        float[] AccuracyAccel = new float[3];
+        AccuracyAccel[0] = 100f*((float)(aSTAvg[0] - aAvg[0]))/factoryTrimAccel[0];
+        AccuracyAccel[1] = 100f*((float)(aSTAvg[1] - aAvg[1]))/factoryTrimAccel[1];
+        AccuracyAccel[2] = 100f*((float)(aSTAvg[2] - aAvg[2]))/factoryTrimAccel[2];
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
-        System.out.println("x: " + aXAccuracy + "%");
-        System.out.println("y: " + aYAccuracy + "%");
-        System.out.println("z: " + aZAccuracy + "%");
+        System.out.println("x: " + AccuracyAccel[0] + "%");
+        System.out.println("y: " + AccuracyAccel[1] + "%");
+        System.out.println("z: " + AccuracyAccel[2] + "%");
+               
+        // Calculate Gyro accuracy       
+        short[] selfTestGyro = new short[3]; //Longer than byte to allow for removal of sign bit as this is unsigned
+        selfTestGyro[0] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_X_GYRO) & 0xFF);
+        selfTestGyro[1] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Y_GYRO) & 0xFF);
+        selfTestGyro[2] = (short)((short)roMPU.readByteRegister(Registers.SELF_TEST_Z_GYRO) & 0xFF);
+        System.out.println("Self test Gyro bytes: "+Arrays.toString(selfTestGyro));        
+
+        float[] factoryTrimGyro = new float[3];
+        factoryTrimGyro[0] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestGyro[0] - 1f);
+        factoryTrimGyro[1] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestGyro[1] - 1f);
+        factoryTrimGyro[2] = (float)(2620/1<<FS)*(float)Math.pow(1.01,(float)selfTestGyro[2] - 1f);
+        System.out.println("factoryTrimGyro (float): "+Arrays.toString(factoryTrimAccel)); 
+
+        float[] AccuracyGyro = new float[3];
+        AccuracyGyro[0] = 100f*((float)(gSTAvg[0] - gAvg[0]))/factoryTrimGyro[0];
+        AccuracyGyro[1] = 100f*((float)(gSTAvg[1] - gAvg[1]))/factoryTrimGyro[1];
+        AccuracyGyro[2] = 100f*((float)(gSTAvg[2] - gAvg[2]))/factoryTrimGyro[2];
+        
         System.out.println("Gyroscope accuracy:(% away from factory values)");
-        System.out.println("x: " + 100.0*((float)(gSTAvg[0] - gAvg[0]))/factoryTrim[3] + "%");
-        System.out.println("y: " + 100.0*((float)(gSTAvg[1] - gAvg[1]))/factoryTrim[4] + "%");
-        System.out.println("z: " + 100.0*((float)(gSTAvg[2] - gAvg[2]))/factoryTrim[5] + "%");
+        System.out.println("x: " + AccuracyGyro[0] + "%");
+        System.out.println("y: " + AccuracyGyro[1] + "%");
+        System.out.println("z: " + AccuracyGyro[2] + "%");
+
+        roMPU.writeByteRegister(Registers.ACCEL_CONFIG, (byte)(0x00 | AccScale.AFS_2G.getValue())); //Clear self test mode and set accelerometer range to +/- 2 g
+        roMPU.writeByteRegister(Registers.GYRO_CONFIG,  (byte)(0x00 | GyrScale.GFS_250DPS.getValue())); //Clear self test mode and set gyro range to +/- 250 degrees/s
+        
+        Thread.sleep(25); // Delay a while to let the device stabilise
+
         System.out.println("End selfTest");
     }
 
