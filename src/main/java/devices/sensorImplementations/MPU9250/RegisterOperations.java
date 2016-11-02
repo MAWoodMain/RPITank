@@ -113,7 +113,13 @@ public class RegisterOperations {
 		e.printStackTrace();
        }
 	   byte newRegVal = readByteRegister(r);
-	   System.out.format("%20s : %8s 0x%X -> %8s 0x%X%n",r.name(),byteToString(oldRegVal),oldRegVal,byteToString(newRegVal),newRegVal);
+	   if(newRegVal == rv)
+		   System.out.format("%20s : %8s 0x%X -> %8s 0x%X%n",
+				   r.name(),byteToString(oldRegVal),oldRegVal,byteToString(newRegVal),newRegVal);
+
+	   else System.out.format("%20s : %8s 0x%X -> %8s 0x%X read as -> %8s 0x%X%n ",
+			   r.name(),byteToString(oldRegVal),oldRegVal,byteToString(rv),rv,byteToString(newRegVal),newRegVal);
+
 
    }
    
