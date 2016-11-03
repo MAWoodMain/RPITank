@@ -294,26 +294,35 @@ public class MPU9250 extends NineDOF
         // non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
         // compensation calculations. Accelerometer bias registers expect bias input as 2048 LSB per g, so that
         // the accelerometer biases calculated above must be divided by 8.
+        // XA_OFFSET is a 15 bit quantity with bits 14:7 in the high byte and 6:0 in the low byte with temperature compensation in bit0
+        // so having got it in a 16 bit short, and having preserved the bottom bit, the number must be shifted right by 1 or divide by 2
+        // to give the correct value for calculations. After calculations it must be shifted left by 1 or multiplied by 2 to get
+        // the bytes correct, then the preserved bit0 can be put back before the bytes are written to registers
         
         short[] accelBiasReg = roMPU.read16BitRegisters( Registers.XA_OFFSET_H, 3);
         System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
     	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
-        int mask = 1; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
+        int mask = 0x01; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
         byte[] mask_bit = new byte[]{0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
 
         for(int s = 0; s < 3; s++) {
             if((accelBiasReg[s] & mask)==1) mask_bit[s] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
+            //divide accelBiasReg by 2 to remove the bottom bit and preserve any sign (java has no unsigned 16 bit numbers)
+            accelBiasReg[s] /=2;
         }
-
         // Construct total accelerometer bias, including calculated average accelerometer bias from above
-        accelBiasReg[0] -= (accelBiasAvg[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-        accelBiasReg[1] -= (accelBiasAvg[1]/8);
-        accelBiasReg[2] -= (accelBiasAvg[2]/8);
-        System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
+        for (int i = 0; i<3; i++)
+        {
+        	accelBiasReg[i] -= (accelBiasAvg[i]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+        	accelBiasReg[i] *=2; //multiply by two to leave the bottom bit clear and but all the bits in the correct bytes
+        }
+        System.out.print("(accelBiasReg - biasAvg/8)*2 (16bit): "+Arrays.toString(accelBiasReg));
     	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
         buffer = new byte[6];
+        
+        // XA_OFFSET is a 15 bit quantity with bits 14:7 in the high byte and 6:0 in the low byte with temperature compensation in bit0
 
         buffer[0] = (byte)((accelBiasReg[0] >> 8) & 0xFF); //Shift down and mask top 8 bits
         buffer[1] = (byte)((accelBiasReg[0])      & 0xFE); //copy bits 7-1 clear bit 0
@@ -328,7 +337,7 @@ public class MPU9250 extends NineDOF
     	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5]);
 
         // Apparently this is not working for the acceleration biases in the MPU-9250
-        // Are we handling the temperature correction bit properly? - no mask with 0xFE not 0xFF then Or with mask_bit
+        // Are we handling the temperature correction bit properly? - see comments above
     	
         // Push accelerometer biases to hardware registers  	
         roMPU.writeByteRegister(Registers.XA_OFFSET_H, buffer[0]);
