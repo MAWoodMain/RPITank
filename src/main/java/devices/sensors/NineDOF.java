@@ -48,7 +48,7 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
         thermScaling = 1f;
     }
 
-
+////////////////////////////////////////////////////////////////////////////////
     @Override
     public float getLatestTemperature()
     {
@@ -66,7 +66,20 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     {
         return therm.size();
     }
-
+    public float getAvgTemperature()
+    {
+    	float sum = 0;
+    	float avg = 0;
+    	int n = therm.size();
+    	if(n<=0) return avg;
+    	for( int i = n-1; i>=0; i--)
+    	{
+    		sum += therm.get(i);
+    	}
+    	avg = sum/n;
+    	return avg;
+    }
+////////////////////////////////////////////////////////////////////////////////
     @Override
     public TimestampedData3D getLatestRotationalAcceleration()
     {
@@ -84,7 +97,24 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     {
         return gyr.size();
     }
-
+    public TimestampedData3D getAvgRotationalAcceleration()
+    {
+    	TimestampedData3D sum = new TimestampedData3D(0,0,0);
+    	TimestampedData3D avg = new TimestampedData3D(sum);
+    	int n = gyr.size();
+    	if(n<=0) return avg;
+    	for( int i = n-1; i>=0; i--)
+    	{
+    		sum.setX(sum.getX()+gyr.get(i).getX());
+    		sum.setY(sum.getY()+gyr.get(i).getY());
+    		sum.setZ(sum.getZ()+gyr.get(i).getZ());
+    	}
+    	avg.setX(sum.getX()/n);
+    	avg.setY(sum.getY()/n);
+    	avg.setZ(sum.getZ()/n);
+    	return avg;
+    }
+////////////////////////////////////////////////////////////////////////////////
     @Override
     public TimestampedData3D getLatestAcceleration()
     {
@@ -102,7 +132,27 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     {
         return acc.size();
     }
-
+    
+    public TimestampedData3D getAvgAcceleration()
+    {
+    	TimestampedData3D sum = new TimestampedData3D(0,0,0);
+    	TimestampedData3D avg = new TimestampedData3D(sum);
+    	int n = acc.size();
+    	if(n<=0) return avg;
+    	avg = acc.get(n-1); //set timestamp correctly
+    	for( int i = n-1; i>=0; i--)
+    	{
+    		sum.setX(sum.getX()+acc.get(i).getX());
+    		sum.setY(sum.getY()+acc.get(i).getY());
+    		sum.setZ(sum.getZ()+acc.get(i).getZ());
+    		//System.out.println(i + " : " +acc.get(i).getZ()+ "," + sum.getZ());
+    	}
+    	avg.setX(sum.getX()/n);
+    	avg.setY(sum.getY()/n);
+    	avg.setZ(sum.getZ()/n);
+    	return avg;
+    }
+////////////////////////////////////////////////////////////////////////////////
     @Override
     public TimestampedData3D getLatestGaussianData()
     {
@@ -120,7 +170,24 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
     {
         return mag.size();
     }
-
+    public TimestampedData3D getAvgGauss()
+    {
+    	TimestampedData3D sum = new TimestampedData3D(0,0,0);
+    	TimestampedData3D avg = new TimestampedData3D(sum);
+    	int n = mag.size();
+    	if(n<=0) return avg;
+    	for( int i = n-1; i>=0; i--)
+    	{
+    		sum.setX(sum.getX()+mag.get(i).getX());
+    		sum.setY(sum.getY()+mag.get(i).getY());
+    		sum.setZ(sum.getZ()+mag.get(i).getZ());
+    	}
+    	avg.setX(sum.getX()/n);
+    	avg.setY(sum.getY()/n);
+    	avg.setZ(sum.getZ()/n);
+    	return avg;
+    }
+////////////////////////////////////////////////////////////////////////////////
     public void updateData()
     {
         try

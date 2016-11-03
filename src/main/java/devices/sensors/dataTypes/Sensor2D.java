@@ -32,6 +32,24 @@ public abstract class Sensor2D extends Sensor1D
         actual.offset(unitCorrectionOffset);
         return new TimestampedData1D(actual.getX(),rawXVals.get(i).nanoTime);
     }
+    public TimestampedData1D getAvgY()
+    {
+    	int n = rawYVals.size();
+    	double sum = 0;
+    	Data1D value;
+    	for (int i=0; i<n; i++  )
+    	{
+    		value = rawYVals.get(i).clone();
+    		value.scale(yScaling);
+    		value.offset(yBias);
+    		value.scale(unitCorrectionScale);
+    		value.offset(unitCorrectionOffset);
+    		sum += value.getX();
+    	}
+    	TimestampedData1D actual = rawXVals.get(n-1).clone();
+    	actual.setX((float)(sum/n));
+        return actual;
+    }
 
     public TimestampedData2D getLatestXY()
     {
@@ -49,6 +67,12 @@ public abstract class Sensor2D extends Sensor1D
         actual.scale(unitCorrectionScale,unitCorrectionScale);
         actual.offset(unitCorrectionOffset,unitCorrectionOffset);
         return actual;
+    }
+
+    public TimestampedData2D getAvgXY()
+    {
+    	TimestampedData1D x = this.getAvgX();
+    	return new TimestampedData2D(x.getX(),this.getAvgY().getX(),x.nanoTime);
     }
 
     protected void addValue(TimestampedData2D value)

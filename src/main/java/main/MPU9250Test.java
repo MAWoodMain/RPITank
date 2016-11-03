@@ -38,6 +38,7 @@ public class MPU9250Test {
             {
                 System.out.println(" A: " + mpu9250.getAcceleration(i).toString());
             }
+            System.out.println("Average Acceleration " + mpu9250.getAvgAcceleration().toString());
             
             int gc = mpu9250.getGyroscopeReadingCount();
             System.out.println("GyroReadingCount "+gc);
@@ -45,6 +46,7 @@ public class MPU9250Test {
             {
                 System.out.println("G: " + mpu9250.getRotationalAcceleration(i).toString());
             }
+            System.out.println("Average Rotation " + mpu9250.getAvgRotationalAcceleration().toString());
             
             int mc = mpu9250.getMagnetometerReadingCount();
             System.out.println("MagReadingCount "+mc);
@@ -52,13 +54,11 @@ public class MPU9250Test {
             {
                System.out.println(" M: " + mpu9250.getGaussianData(i).toString());
             }
+            System.out.println("Average Gauss " + mpu9250.getAvgGauss().toString());
             
             int tc = mpu9250.getThermometerReadingCount();
             System.out.println("ThermReadingCount "+tc);
-            for(int i = tc -1; i>=0; i--)
-            {
-               System.out.println(" T: " + mpu9250.getTemperature(i));
-            }
+            System.out.println(" Average Temperature: " + mpu9250.getAvgTemperature() + " F");
             
            Thread.sleep(1000);
             sensor.interrupt();

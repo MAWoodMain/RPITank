@@ -51,7 +51,25 @@ public abstract class Sensor1D implements Runnable
         actual.offset(unitCorrectionOffset);
         return actual;
     }
-
+    
+    public TimestampedData1D getAvgX()
+    {
+    	int n = rawXVals.size();
+    	double sum = 0;
+    	TimestampedData1D value;
+    	for (int i=0; i<n; i++  )
+    	{
+    		value = rawXVals.get(i).clone();
+    		value.scale(xScaling);
+    		value.offset(xBias);
+    		value.scale(unitCorrectionScale);
+    		value.offset(unitCorrectionOffset);
+    		sum += value.getX();
+    	}
+    	TimestampedData1D actual = rawXVals.get(n-1).clone();
+    	actual.setX((float)(sum/n));
+        return actual;
+    }
 
     @Override
     public void run()
