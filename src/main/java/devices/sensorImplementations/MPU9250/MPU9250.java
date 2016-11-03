@@ -58,14 +58,9 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ACCEL_CONFIG2,(byte)0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
         final int TEST_LENGTH = 200;
 
-        int[] aSum = new int[3]; //32 bit integer to accumulate and avoid overflow
-        int[] gSum = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] aSum = new int[] {0,0,0}; //32 bit integer to accumulate and avoid overflow
+        int[] gSum = new int[] {0,0,0}; //32 bit integer to accumulate and avoid overflow
         short[] registers; 
-        for (int i = 0; i<3; i++)
-        {
-        	aSum[i] = 0;
-        	gSum[i] = 0;
-        }
         for(int s=0; s<TEST_LENGTH; s++)
         {
             //System.out.print("aAvg acc: "+Arrays.toString(aAvg));
@@ -84,14 +79,12 @@ public class MPU9250 extends NineDOF
         	//System.out.format("reg added [%d, %d, %d] [0x%X, 0x%X, 0x%X]%n",
         	//		registers[0],registers[1],registers[2],registers[0],registers[1],registers[2]);
         }
-        short[] aAvg = new short[3];
-        short[] gAvg = new short[3];
+        short[] aAvg = new short[] {0,0,0};
+        short[] gAvg = new short[] {0,0,0};
         for(int i = 0; i<3; i++)
         {
-            aSum[i] /= TEST_LENGTH;
-            aAvg[i] = (short) (aSum[i] & 0xFFFF); //mask off top bits
-            gSum[i] /= TEST_LENGTH;
-            gAvg[i] = (short) (aSum[i] & 0xFFFF); //mask off top bits
+            aAvg[i] = (short) ((short)(aSum[i]/TEST_LENGTH) & (short)0xFFFF); //average and mask off top bits
+            gAvg[i] = (short) ((short)(gSum[i]/TEST_LENGTH) & (short)0xFFFF); //average and mask off top bits
         }
 
         System.out.print("aAvg average: "+Arrays.toString(aAvg));
@@ -104,8 +97,8 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.GYRO_CONFIG, (byte)(0xE0 | GyrScale.GFS_250DPS.getValue()));// Enable self test on all three axes and set gyro range to +/- 250 degrees/s
         Thread.sleep(25); // Delay a while to let the device stabilise
         //outputConfigRegisters();
-        int[] aSelfTestSum = new int[3]; //32 bit integer to accumulate and avoid overflow
-        int[] gSelfTestSum = new int[3]; //32 bit integer to accumulate and avoid overflow
+        int[] aSelfTestSum = new int[] {0,0,0}; //32 bit integer to accumulate and avoid overflow
+        int[] gSelfTestSum = new int[] {0,0,0}; //32 bit integer to accumulate and avoid overflow
         
         // get average self-test values of gyro and accelerometer
         for(int s=0; s<TEST_LENGTH; s++) 
@@ -121,15 +114,13 @@ public class MPU9250 extends NineDOF
             gSelfTestSum[2] += registers[2];
         }
         
-        short[] aSTAvg = new short[3];
-        short[] gSTAvg = new short[3];
+        short[] aSTAvg = new short[] {0,0,0};
+        short[] gSTAvg = new short[] {0,0,0};
 
         for(int i = 0; i<3; i++)
         {
-            aSelfTestSum[i] /= TEST_LENGTH;
-            aSTAvg[i] = (short) (aSelfTestSum[i] & 0xFFFF); //mask off top bits
-            gSelfTestSum[i] /= TEST_LENGTH;
-            gSTAvg[i] = (short) (gSelfTestSum[i] & 0xFFFF); //mask off top bits
+            aSTAvg[i] = (short) ((short)(aSelfTestSum[i]/TEST_LENGTH) & (short)0xFFFF); //average and mask off top bits
+            gSTAvg[i] = (short) ((short)(gSelfTestSum[i]/TEST_LENGTH) & (short)0xFFFF); //average and mask off top bits
         }
         System.out.print("aSTAvg average: "+Arrays.toString(aSTAvg));
     	System.out.format(" [0x%X, 0x%X, 0x%X]%n", aSTAvg[0], aSTAvg[1], aSTAvg[2]);
@@ -152,9 +143,9 @@ public class MPU9250 extends NineDOF
         System.out.println("factoryTrimAcc (float): "+Arrays.toString(factoryTrimAccel)); 
 
         float[] AccuracyAccel = new float[3];
-        AccuracyAccel[0] = 100f*((float)(aSTAvg[0] - aAvg[0]))/factoryTrimAccel[0];
-        AccuracyAccel[1] = 100f*((float)(aSTAvg[1] - aAvg[1]))/factoryTrimAccel[1];
-        AccuracyAccel[2] = 100f*((float)(aSTAvg[2] - aAvg[2]))/factoryTrimAccel[2];
+        AccuracyAccel[0] = 100f*((float)(aSTAvg[0] - aAvg[0]))/factoryTrimAccel[0]-100f;
+        AccuracyAccel[1] = 100f*((float)(aSTAvg[1] - aAvg[1]))/factoryTrimAccel[1]-100f;
+        AccuracyAccel[2] = 100f*((float)(aSTAvg[2] - aAvg[2]))/factoryTrimAccel[2]-100f;
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
         System.out.println("x: " + AccuracyAccel[0] + "%");
@@ -175,9 +166,9 @@ public class MPU9250 extends NineDOF
         System.out.println("factoryTrimGyro (float): "+Arrays.toString(factoryTrimAccel)); 
 
         float[] AccuracyGyro = new float[3];
-        AccuracyGyro[0] = 100f*((float)(gSTAvg[0] - gAvg[0]))/factoryTrimGyro[0];
-        AccuracyGyro[1] = 100f*((float)(gSTAvg[1] - gAvg[1]))/factoryTrimGyro[1];
-        AccuracyGyro[2] = 100f*((float)(gSTAvg[2] - gAvg[2]))/factoryTrimGyro[2];
+        AccuracyGyro[0] = 100f*((float)(gSTAvg[0] - gAvg[0]))/factoryTrimGyro[0]-100f;
+        AccuracyGyro[1] = 100f*((float)(gSTAvg[1] - gAvg[1]))/factoryTrimGyro[1]-100f;
+        AccuracyGyro[2] = 100f*((float)(gSTAvg[2] - gAvg[2]))/factoryTrimGyro[2]-100f;
         
         System.out.println("Gyroscope accuracy:(% away from factory values)");
         System.out.println("x: " + AccuracyGyro[0] + "%");
@@ -235,47 +226,51 @@ public class MPU9250 extends NineDOF
         short packetCount = roMPU.read16BitRegisters( Registers.FIFO_COUNTH, 1)[0];
         int sampleCount =  packetCount / 12; // 12 bytes per sample 6 x 16 bit values
 
-        int[] accelBiasl = new int[]{0,0,0}; 
-        int[] gyroBias = new int[]{0,0,0};
+        int[] accelBiasSum = new int[]{0,0,0}; //32 bit to allow for accumulation without overflow
+        int[] gyroBiasSum = new int[]{0,0,0}; //32 bit to allow for accumulation without overflow
+        short[] accelBiasAvg = new short[]{0,0,0}; //16 bit average
+        short[] gyroBiasAvg = new short[]{0,0,0}; //16 bit average
         short[] tempBias;
         System.out.println("packetCount: "+packetCount);
         for(int s = 0; s < sampleCount; s++)
         {
             tempBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
-            System.out.print("bias sample bytes: "+Arrays.toString(tempBias));
-        	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",tempBias[0],tempBias[1],tempBias[2],tempBias[3],tempBias[4],tempBias[5]);
+            //System.out.print("bias sample bytes: "+Arrays.toString(tempBias));
+        	//System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",tempBias[0],tempBias[1],tempBias[2],tempBias[3],tempBias[4],tempBias[5]);
             
-            accelBiasl[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
-            accelBiasl[1] += tempBias[1];
-            accelBiasl[2] += tempBias[2];
-            gyroBias[0] += tempBias[3];
-            gyroBias[1] += tempBias[4];
-            gyroBias[2] += tempBias[5];
+            accelBiasSum[0] += tempBias[0]; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
+            accelBiasSum[1] += tempBias[1];
+            accelBiasSum[2] += tempBias[2];
+            gyroBiasSum[0] += tempBias[3];
+            gyroBiasSum[1] += tempBias[4];
+            gyroBiasSum[2] += tempBias[5];
         }
 
-        accelBiasl[0] /= sampleCount; // Normalise sums to get average count biases
-        accelBiasl[1] /= sampleCount;
-        accelBiasl[2] /= sampleCount;
-        gyroBias[0] /= sampleCount;
-        gyroBias[1] /= sampleCount;
-        gyroBias[2] /= sampleCount;
-        System.out.print("Normalised accumulated AccBias : "+Arrays.toString(accelBiasl));
-    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",accelBiasl[0],accelBiasl[1],accelBiasl[2]);
-        System.out.print("Normalised accumulated GyroBias: "+Arrays.toString(gyroBias));
-    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",gyroBias[0],gyroBias[1],gyroBias[2]);
+        accelBiasAvg[0] = (short)((accelBiasSum[0] / sampleCount) & 0xffff); // Normalise sums to get average count biases
+        accelBiasAvg[1] = (short)((accelBiasSum[1] / sampleCount) & 0xffff); 
+        accelBiasAvg[2] = (short)((accelBiasSum[2] / sampleCount) & 0xffff); 
+        gyroBiasAvg[0] = (short)((gyroBiasSum[0] / sampleCount) & 0xffff);
+        gyroBiasAvg[1] = (short)((gyroBiasSum[1] / sampleCount) & 0xffff);
+        gyroBiasAvg[2] = (short)((gyroBiasSum[2] / sampleCount) & 0xffff);
+        
+        System.out.print("Accel Bias average: "+Arrays.toString(accelBiasAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",accelBiasAvg[0],accelBiasAvg[1],accelBiasAvg[2]);
 
-        if(accelBiasl[2] > 0L) {accelBiasl[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
-        else {accelBiasl[2] += accelSensitivity;}
+        if(accelBiasAvg[2] > 0) {accelBiasAvg[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
+        else {accelBiasAvg[2] += accelSensitivity;}
+    	System.out.format("z ajusted for gravity %d 0x%X%n",accelBiasAvg[2],accelBiasAvg[2]);
 
+        System.out.print("Gyro Bias average: "+Arrays.toString(gyroBiasAvg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X]%n",gyroBiasAvg[0],gyroBiasAvg[1],gyroBiasAvg[2]);
 
         byte[] buffer = new byte[6];
         // Construct the gyro biases for push to the hardware gyro bias registers, which are reset to zero upon device startup
-        buffer[0] = (byte)(((-gyroBias[0]/4)  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
-        buffer[1] = (byte)((-gyroBias[0]/4)       & 0xFF); // Biases are additive, so change sign on calculated average gyro biases
-        buffer[2] = (byte)(((-gyroBias[1]/4)  >> 8) & 0xFF);
-        buffer[3] = (byte)((-gyroBias[1]/4)       & 0xFF);
-        buffer[4] = (byte)(((-gyroBias[2]/4)  >> 8) & 0xFF);
-        buffer[5] = (byte)((-gyroBias[2]/4)       & 0xFF);
+        buffer[0] = (byte)(((-gyroBiasAvg[0]/4)  >> 8) & 0xFF); // Divide by 4 to get 32.9 LSB per deg/s to conform to expected bias input format
+        buffer[1] = (byte)((-gyroBiasAvg[0]/4)       & 0xFF); // Biases are additive, so change sign on calculated average gyro biases
+        buffer[2] = (byte)(((-gyroBiasAvg[1]/4)  >> 8) & 0xFF);
+        buffer[3] = (byte)((-gyroBiasAvg[1]/4)       & 0xFF);
+        buffer[4] = (byte)(((-gyroBiasAvg[2]/4)  >> 8) & 0xFF);
+        buffer[5] = (byte)((-gyroBiasAvg[2]/4)       & 0xFF);
         System.out.print("Bias bytes: "+Arrays.toString(buffer));
     	System.out.format(" [0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X]%n",buffer[0],buffer[1],buffer[2],buffer[3],buffer[4],buffer[5]);
         
@@ -289,9 +284,9 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ZG_OFFSET_L, buffer[5]);
         
          // Output scaled gyro biases for display in the main program
-  		gyrBias[0] = (float) gyroBias[0]/(float) gyrosensitivity;  
-  		gyrBias[1] = (float) gyroBias[1]/(float) gyrosensitivity;
-  		gyrBias[2] = (float) gyroBias[2]/(float) gyrosensitivity;
+  		gyrBias[0] = (float) gyroBiasAvg[0]/(float) gyrosensitivity;  
+  		gyrBias[1] = (float) gyroBiasAvg[1]/(float) gyrosensitivity;
+  		gyrBias[2] = (float) gyroBiasAvg[2]/(float) gyrosensitivity;
         System.out.println("gyrBias (float): "+Arrays.toString(gyrBias));
 
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
@@ -312,9 +307,9 @@ public class MPU9250 extends NineDOF
         }
 
         // Construct total accelerometer bias, including calculated average accelerometer bias from above
-        accelBiasReg[0] -= (accelBiasl[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
-        accelBiasReg[1] -= (accelBiasl[1]/8);
-        accelBiasReg[2] -= (accelBiasl[2]/8);
+        accelBiasReg[0] -= (accelBiasAvg[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+        accelBiasReg[1] -= (accelBiasAvg[1]/8);
+        accelBiasReg[2] -= (accelBiasAvg[2]/8);
         System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
     	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
@@ -345,9 +340,11 @@ public class MPU9250 extends NineDOF
         
 
 
-        accBias[0] = (float)accelBiasl[0]/(float)accelSensitivity;
-        accBias[1] = (float)accelBiasl[1]/(float)accelSensitivity;
-        accBias[2] = (float)accelBiasl[2]/(float)accelSensitivity;
+        accBias[0] = (float)accelBiasAvg[0]/(float)accelSensitivity;
+        accBias[1] = (float)accelBiasAvg[1]/(float)accelSensitivity;
+        accBias[2] = (float)accelBiasAvg[2]/(float)accelSensitivity;
+        System.out.println("accelBias (float): "+Arrays.toString(buffer));
+      
     	System.out.println("End calibrateGyroAcc");
     }
 
