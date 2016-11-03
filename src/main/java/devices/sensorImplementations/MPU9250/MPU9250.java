@@ -143,9 +143,9 @@ public class MPU9250 extends NineDOF
         System.out.println("factoryTrimAcc (float): "+Arrays.toString(factoryTrimAccel)); 
 
         float[] AccuracyAccel = new float[3];
-        AccuracyAccel[0] = 100f*((float)(aSTAvg[0] - aAvg[0]))/factoryTrimAccel[0]-100f;
-        AccuracyAccel[1] = 100f*((float)(aSTAvg[1] - aAvg[1]))/factoryTrimAccel[1]-100f;
-        AccuracyAccel[2] = 100f*((float)(aSTAvg[2] - aAvg[2]))/factoryTrimAccel[2]-100f;
+        AccuracyAccel[0] = 100f*(((float)(aSTAvg[0] - aAvg[0]))/factoryTrimAccel[0]-1f);
+        AccuracyAccel[1] = 100f*(((float)(aSTAvg[1] - aAvg[1]))/factoryTrimAccel[1]-1f);
+        AccuracyAccel[2] = 100f*(((float)(aSTAvg[2] - aAvg[2]))/factoryTrimAccel[2]-1f);
 
         System.out.println("Accelerometer accuracy:(% away from factory values)");
         System.out.println("x: " + AccuracyAccel[0] + "%");
@@ -166,9 +166,9 @@ public class MPU9250 extends NineDOF
         System.out.println("factoryTrimGyro (float): "+Arrays.toString(factoryTrimAccel)); 
 
         float[] AccuracyGyro = new float[3];
-        AccuracyGyro[0] = 100f*((float)(gSTAvg[0] - gAvg[0]))/factoryTrimGyro[0]-100f;
-        AccuracyGyro[1] = 100f*((float)(gSTAvg[1] - gAvg[1]))/factoryTrimGyro[1]-100f;
-        AccuracyGyro[2] = 100f*((float)(gSTAvg[2] - gAvg[2]))/factoryTrimGyro[2]-100f;
+        AccuracyGyro[0] = 100f*(((float)(gSTAvg[0] - gAvg[0]))/factoryTrimGyro[0]-1f);
+        AccuracyGyro[1] = 100f*(((float)(gSTAvg[1] - gAvg[1]))/factoryTrimGyro[1]-1f);
+        AccuracyGyro[2] = 100f*(((float)(gSTAvg[2] - gAvg[2]))/factoryTrimGyro[2]-1f);
         
         System.out.println("Gyroscope accuracy:(% away from factory values)");
         System.out.println("x: " + AccuracyGyro[0] + "%");
