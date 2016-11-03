@@ -128,6 +128,7 @@ public abstract class NineDOF extends SensorPackage implements Accelerometer, Gy
             updateAccelerometerData();
             updateGyroscopeData();
             updateMagnetometerData();
+            updateThermometerData();
         } catch (Exception e)
         {
             e.printStackTrace();
