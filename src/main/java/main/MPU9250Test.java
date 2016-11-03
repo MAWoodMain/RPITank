@@ -24,7 +24,7 @@ public class MPU9250Test {
             MPU9250 mpu9250 = new MPU9250(
                     new Pi4jI2CDevice(bus.getDevice(0x68)), // MPU9250 I2C device
                     new Pi4jI2CDevice(bus.getDevice(0x0C)), // ak8963 I2C 
-                    10,                                    // sample rate
+                    10,                                     // sample rate per second
                     100); 									// sample size
             System.out.println("MPU9250 created");
             Thread sensor = new Thread(mpu9250);
@@ -52,7 +52,15 @@ public class MPU9250Test {
             {
                System.out.println(" M: " + mpu9250.getGaussianData(i).toString());
             }
-            Thread.sleep(1000);
+            
+            int tc = mpu9250.getThermometerReadingCount();
+            System.out.println("ThermReadingCount "+tc);
+            for(int i = tc -1; i>=0; i--)
+            {
+               System.out.println(" T: " + mpu9250.getTemperature(i));
+            }
+            
+           Thread.sleep(1000);
             sensor.interrupt();
             Thread.sleep(1000);
             bus.close();
