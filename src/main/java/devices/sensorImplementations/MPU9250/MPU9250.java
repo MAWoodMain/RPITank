@@ -217,7 +217,7 @@ public class MPU9250 extends NineDOF
 
         // Configure FIFO to capture accelerometer and gyro data for bias calculation
         roMPU.writeByteRegister(Registers.USER_CTRL,(byte) 0x40);   // Enable FIFO
-        roMPU.writeByteRegister(Registers.FIFO_EN,(byte) 0x78);     // Enable gyro and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
+        roMPU.writeByteRegister(Registers.FIFO_EN,(byte) 0x78);     // Enable gyro x,y,z and accelerometer sensors for FIFO  (max size 512 bytes in MPU-9150)
         Thread.sleep(40); // accumulate 40 samples in 40 milliseconds = 480 bytes
 
         // At end of sample accumulation, turn off FIFO sensor read
@@ -232,6 +232,8 @@ public class MPU9250 extends NineDOF
         short[] gyroBiasAvg = new short[]{0,0,0}; //16 bit average
         short[] tempBias;
         System.out.println("packetCount: "+packetCount);
+        
+        //Read FIFO
         for(int s = 0; s < sampleCount; s++)
         {
             tempBias = roMPU.read16BitRegisters(Registers.FIFO_R_W,6); //12 bytes
@@ -258,7 +260,7 @@ public class MPU9250 extends NineDOF
 
         if(accelBiasAvg[2] > 0) {accelBiasAvg[2] -= accelSensitivity;}  // Remove gravity from the z-axis accelerometer bias calculation
         else {accelBiasAvg[2] += accelSensitivity;}
-    	System.out.format("z ajusted for gravity %d 0x%X%n",accelBiasAvg[2],accelBiasAvg[2]);
+    	System.out.format("z adjusted for gravity %d 0x%X%n",accelBiasAvg[2],accelBiasAvg[2]);
 
         System.out.print("Gyro Bias average: "+Arrays.toString(gyroBiasAvg));
     	System.out.format(" [0x%X, 0x%X, 0x%X]%n",gyroBiasAvg[0],gyroBiasAvg[1],gyroBiasAvg[2]);
@@ -283,12 +285,17 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ZG_OFFSET_H, buffer[4]);
         roMPU.writeByteRegister(Registers.ZG_OFFSET_L, buffer[5]);
         
-         // Output scaled gyro biases for display in the main program
+        // set super class NineDOF variables
   		gyrBias[0] = (float) gyroBiasAvg[0]/(float) gyrosensitivity;  
   		gyrBias[1] = (float) gyroBiasAvg[1]/(float) gyrosensitivity;
   		gyrBias[2] = (float) gyroBiasAvg[2]/(float) gyrosensitivity;
         System.out.println("gyrBias (float): "+Arrays.toString(gyrBias));
-
+        System.out.println();
+        setAccelerometerBiases(accelBiasAvg,accelSensitivity);
+    	System.out.println("End calibrateGyroAcc");
+    }
+    private void setAccelerometerBiases(short[] accelBiasAvg, short accelSensitivity)
+    {
         // Construct the accelerometer biases for push to the hardware accelerometer bias registers. These registers contain
         // factory trim values which must be added to the calculated accelerometer biases; on boot up these registers will hold
         // non-zero values. In addition, bit 0 of the lower byte must be preserved since it is used for temperature
@@ -298,9 +305,10 @@ public class MPU9250 extends NineDOF
         // so having got it in a 16 bit short, and having preserved the bottom bit, the number must be shifted right by 1 or divide by 2
         // to give the correct value for calculations. After calculations it must be shifted left by 1 or multiplied by 2 to get
         // the bytes correct, then the preserved bit0 can be put back before the bytes are written to registers
-        
+    	System.out.println("setAccelerometerBiases");
+       
         short[] accelBiasReg = roMPU.read16BitRegisters( Registers.XA_OFFSET_H, 3);
-        System.out.print("accelBiasReg (16bit): "+Arrays.toString(accelBiasReg));
+        System.out.print("accelBiasReg with temp compensation bit: "+Arrays.toString(accelBiasReg));
     	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
         int mask = 0x01; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
@@ -311,6 +319,9 @@ public class MPU9250 extends NineDOF
             //divide accelBiasReg by 2 to remove the bottom bit and preserve any sign (java has no unsigned 16 bit numbers)
             accelBiasReg[s] /=2;
         }
+        System.out.print("accelBiasReg without temp compensation bit: "+Arrays.toString(accelBiasReg));
+    	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
+        
         // Construct total accelerometer bias, including calculated average accelerometer bias from above
         for (int i = 0; i<3; i++)
         {
@@ -320,7 +331,7 @@ public class MPU9250 extends NineDOF
         System.out.print("(accelBiasReg - biasAvg/8)*2 (16bit): "+Arrays.toString(accelBiasReg));
     	System.out.format(" [0x%X, 0x%X, 0x%X] %n",accelBiasReg[0],accelBiasReg[1],accelBiasReg[2]);
 
-        buffer = new byte[6];
+        byte[] buffer = new byte[6];
         
         // XA_OFFSET is a 15 bit quantity with bits 14:7 in the high byte and 6:0 in the low byte with temperature compensation in bit0
 
@@ -347,16 +358,14 @@ public class MPU9250 extends NineDOF
         roMPU.writeByteRegister(Registers.ZA_OFFSET_H, buffer[4]);
         roMPU.writeByteRegister(Registers.ZA_OFFSET_L, buffer[5]);
         
-
-
+        // set super class NineDOF variables
         accBias[0] = (float)accelBiasAvg[0]/(float)accelSensitivity;
         accBias[1] = (float)accelBiasAvg[1]/(float)accelSensitivity;
         accBias[2] = (float)accelBiasAvg[2]/(float)accelSensitivity;
         System.out.println("accelBias (float): "+Arrays.toString(buffer));
-      
-    	System.out.println("End calibrateGyroAcc");
+    	System.out.println("End setAccelerometerBiases");
     }
-
+    
     private void initMPU9250() throws IOException, InterruptedException
     {
     	System.out.println("initMPU9250");
