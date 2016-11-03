@@ -43,7 +43,7 @@ public class MPU9250 extends NineDOF
         calibrateGyroAcc();
         initMPU9250();
         initAK8963();
-        calibrateMag();
+        //calibrateMag();
     }
 
     private void selfTest() throws IOException, InterruptedException
@@ -260,8 +260,8 @@ public class MPU9250 extends NineDOF
         System.out.print("Gyro Bias average: "+Arrays.toString(gyroBiasAvg));
     	System.out.format(" [0x%X, 0x%X, 0x%X]%n",gyroBiasAvg[0],gyroBiasAvg[1],gyroBiasAvg[2]);
     	
-        setGyroBiases(gyroBiasAvg);
-        setAccelerometerBiases(accelBiasAvg);
+        //setGyroBiases(gyroBiasAvg);
+        //setAccelerometerBiases(accelBiasAvg);
         
     	System.out.println("End calibrateGyroAcc");
     }
